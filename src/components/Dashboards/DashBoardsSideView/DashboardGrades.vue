@@ -1,6 +1,6 @@
 <template>
     <div>
-        <h1>This is the grades</h1>
+        <h1>This is the Student grades</h1>
     </div>
 </template>
 

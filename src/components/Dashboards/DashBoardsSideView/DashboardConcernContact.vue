@@ -1,6 +1,6 @@
 <template>
     <div>
-        <h1>This is the concern and contact page</h1>
+        <h1>This is the student concern and contact page</h1>
     </div>
 </template>
 

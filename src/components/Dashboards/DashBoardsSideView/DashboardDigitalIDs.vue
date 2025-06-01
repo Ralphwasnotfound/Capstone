@@ -1,6 +1,6 @@
 <template>
     <div>
-        <h1>This is the Digital ID's</h1>
+        <h1>This is the Student Digital ID's</h1>
     </div>
 </template>
 

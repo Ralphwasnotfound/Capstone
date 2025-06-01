@@ -1,6 +1,6 @@
 <template>
     <div>
-        <h1>This the announcements
+        <h1>This the student announcements
             
         </h1>
     </div>

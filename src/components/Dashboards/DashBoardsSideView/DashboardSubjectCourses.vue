@@ -1,6 +1,6 @@
 <template>
     <div>
-        this is the Subject Courses
+        this is the student Subject Courses
     </div>
 </template>
 

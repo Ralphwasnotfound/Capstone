@@ -1,7 +1,7 @@
 <template>
     <div class="flex flex-row  gap-5">
         <!-- SIDE BAR -->
-        <div class="bg-[#073050] flex flex-col items-start p-4 w-[25%] h-[100vh]">
+        <div class="bg-[#073050] flex flex-col items-start p-4 w-[250px] fixed top-0 left-0 h-screen">
             <div class="flex flex-row  items-center w-full mb-6 gap-5">
                 <img class="w-[30%] mb-2" src="@/assets/img/Logo.png" alt="Logo">
                 <div class="text-white text-center">
@@ -10,7 +10,7 @@
                 </div>
             </div>
             <!-- Buttons -->
-            <div class="w-full ">
+            <div class="w-full overflow-y-auto flex flex-col gap-2 pr-2 scrollbar-thin" style="max-height: calc(100vh - 140px)">
                 <ButtonDashboard :isActive="activeSection === 'dashboard'" 
                                 @click="selectionSection('dashboard')" 
                                 to="/dashboard/student"/>
@@ -38,7 +38,7 @@
             </div>
         </div>
         
-        <div class="flex-1 p-6">
+        <div class="flex-1 ml-[250px] p-6 overflow-y-auto h-screen">
             <component :is="currentComputed" :key="activeSection + '-' + componentKey" />
         </div>
     </div>
@@ -129,5 +129,21 @@ export default {
 </script>
 
 <style  scoped>
+.scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+}
 
+.scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.3); 
+    border-radius: 10px;
+}
+
+.scrollbar-thin {
+    scrollbar-width: thin; /* Firefox */
+    scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+}
 </style>
