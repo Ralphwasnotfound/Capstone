@@ -17,9 +17,9 @@ import LogOutButton from '@/components/Buttons/LogOutButton.vue';
 import DashboardProfileSettings from './DashboardProfileSettings.vue';
 
 export default {
- components:{
-  LogOutButton,
-  DashboardProfileSettings
- }
+  components:{
+    LogOutButton,
+    DashboardProfileSettings
+  }
 }
 </script>

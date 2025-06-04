@@ -85,7 +85,7 @@ export default {
     },
     data(){
         return{
-            activeSection: 'dashboard',
+            activeSection: '',
             componentKey: 0
         }
     },
@@ -116,13 +116,34 @@ export default {
     },
     methods:{
         selectionSection(section){
-            if(this.activeSection === section){
-                this.componentKey++
-            }else{
-                this.activeSection = section;
-                this.componentKey++ 
-            }
-            
+            this.activeSection = section
+            this.componentKey++
+        },
+        getSectionFromRoute(){
+            const path = this.$route.path
+            if (path.includes('subject-courses'))
+                return 'subject'
+            if (path.includes('attendance'))
+                return 'attendance'
+            if (path.includes('digital-IDs'))
+                return 'digital'
+            if (path.includes('grades'))
+                return 'grades'
+            if (path.includes('announcements'))
+                return 'announcements'
+            if (path.includes('contact-concern'))
+                return 'contact'
+            if (path.includes('profile-settings'))
+                return 'profile'
+            return 'dashboard'
+        }
+    },
+    mounted(){
+        this.activeSection = this.getSectionFromRoute()
+    },
+    watch:{
+        '$route.path'(){
+            this.activeSection = this.getSectionFromRoute()
         }
     }
 }

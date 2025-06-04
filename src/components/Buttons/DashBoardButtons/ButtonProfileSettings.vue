@@ -18,7 +18,7 @@ export default {
     },
     computed:{
         isActive(){
-            return this.$router.path === this.to
+            return this.$route.path === this.to
         }
     }
 }
