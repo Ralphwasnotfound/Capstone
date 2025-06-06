@@ -1,12 +1,16 @@
 <template>
     <div>
-        <h1>This is the Student Digital ID's</h1>
+        <IDsView/>
     </div>
 </template>
 
 <script>
+import IDsView from '@/components/Cards/IDsViewStudent.vue';
+
 export default {
-    
+    components:{
+        IDsView
+    }
 }
 </script>
 
