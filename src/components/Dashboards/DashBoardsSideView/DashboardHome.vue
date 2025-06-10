@@ -6,7 +6,11 @@
     </div>
     <!-- Student Profile -->
     <div>
-      <DashboardProfileSettings :showDetails="false"/>
+      <div class="flex justify-between">
+        <DashboardProfileSettings :showDetails="false"  />
+        <DashboardDigitalIDs flippable />
+      </div>
+        <DashboardSubjectCourses :showSubject="false" :editable="false"/>
       
     </div>
   </div>
@@ -15,11 +19,17 @@
 <script>
 import LogOutButton from '@/components/Buttons/LogOutButton.vue';
 import DashboardProfileSettings from './DashboardProfileSettings.vue';
+import DashboardSubjectCourses from './DashboardSubjectCourses.vue';
+import DashboardDigitalIDs from './DashboardDigitalIDs.vue';
+
+
 
 export default {
   components:{
     LogOutButton,
-    DashboardProfileSettings
+    DashboardProfileSettings,
+    DashboardSubjectCourses,
+    DashboardDigitalIDs 
   }
 }
 </script>

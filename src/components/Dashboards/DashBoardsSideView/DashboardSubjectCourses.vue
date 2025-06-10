@@ -1,6 +1,6 @@
 <template>
     <div>
-        <div class="bg-white p-6 rounded-xl shadow-md text-gray-800">
+        <div v-if="showSubject" class="bg-white p-6 rounded-xl shadow-md text-gray-800">
             <h1 class="text-2xl font-bold mb-2">Bachelor of Information Technology</h1>
             <h2 class="text-lg font-medium">Regular</h2>
             <h2 class="text-lg font-medium text-green-600">Enrolled</h2>
@@ -15,7 +15,7 @@
                     <th class="border border-gray-300 px-4 py-2 text-left font-semibold">Day</th>
                     <th class="border border-gray-300 px-4 py-2 text-left font-semibold">Room</th>
                     <th class="border border-gray-300 px-4 py-2 text-left font-semibold">Instructor</th>
-                    <th class="border border-gray-300 px-4 py-2 text-center font-semibold ">
+                    <th v-if="editable" class="border border-gray-300 px-4 py-2 text-center font-semibold ">
                         <button @click="isEditmode = !isEditmode">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="25" height="25" fill="rgba(100,205,138,1)"><path d="M16.7574 2.99678L14.7574 4.99678H5V18.9968H19V9.23943L21 7.23943V19.9968C21 20.5491 20.5523 20.9968 20 20.9968H4C3.44772 20.9968 3 20.5491 3 19.9968V3.99678C3 3.4445 3.44772 2.99678 4 2.99678H16.7574ZM20.4853 2.09729L21.8995 3.5115L12.7071 12.7039L11.2954 12.7064L11.2929 11.2897L20.4853 2.09729Z"></path></svg>
                         </button>
@@ -33,7 +33,7 @@
                     <td class="border border-gray-300 px-4 py-2">{{ subject.day }}</td>
                     <td class="border border-gray-300 px-4 py-2">{{ subject.room }}</td>
                     <td class="border border-gray-300 px-4 py-2">{{ subject.instructor }}</td>
-                    <td class="border border-gray-300 px-4 py-2">
+                    <td v-if="editable" class="border border-gray-300 px-4 py-2">
                     <transition name="fade">
                         <button
                             v-if="isEditmode"
@@ -51,6 +51,16 @@
 
 <script>
     export default {
+        props:{
+            showSubject:{
+                type: Boolean,
+                default: true
+            },
+            editable:{
+                type: Boolean,
+                default: true
+            }
+        },
         data(){
             return{
                 isEditmode: false,

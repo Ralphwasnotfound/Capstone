@@ -33,7 +33,7 @@
 
                 <div class="flex flex-col">
                     <h1 class="text-[60px] text-start">{{ student.fullName }}</h1>
-                    <h1 class="text-[20px] text-start">{{ student.course }} / {{ student.section }} / {{ student.yearlvl }}</h1>
+                    <h1 class="text-[20px] text-start">{{ student.course }} <br>{{ student.section }} / {{ student.yearlvl }}</h1>
                 </div>
         </div>
         <!-- Profile Settings only -->
