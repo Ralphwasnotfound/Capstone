@@ -20,7 +20,9 @@
         <div class="space-y-2 text-sm text-gray-800">
             <div class="flex justify-between">
                 <span class="font-semibold">ID Number:</span>
-                <span>000-000-005</span>
+                <div>
+                    <span>000-000-005</span>
+                </div>
             </div>
             <div class="flex justify-between">
                 <span class="font-semibold">Name:</span>

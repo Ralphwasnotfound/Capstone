@@ -1,5 +1,18 @@
 <template>
-    <div>
+    <!-- TEACHER -->
+
+    <div v-if="role === 'admin'">
+        <h1>This is the Admin Grades View</h1>
+    </div>
+    <!-- TEACHER -->
+
+    <div v-else-if="role === 'teacher'">
+        <h1>This is the Teacher Grades View</h1>
+    </div>
+    
+    <!-- STUDENT -->
+    <div v-else>
+        <div>
         <table class="w-full border text-sm">
             <thead class="bg-gray-200">
                 <tr>
@@ -32,9 +45,10 @@
                 </tr>
             </tbody>
         </table>
-    </div>
+        </div>
+    
 
-    <div class="py-10">
+        <div class="py-10">
         <table class="w-full border text-sm">
             <thead class="bg-gray-200">
                 <tr>
@@ -51,11 +65,18 @@
                 </tr>
             </tbody>
         </table>
+        </div>
     </div>
 </template>
 
 <script>
     export default {
+        props:{
+            role: {
+                type: String,
+                required: true
+            }
+        },
         data(){
             return{
                 subjects:[

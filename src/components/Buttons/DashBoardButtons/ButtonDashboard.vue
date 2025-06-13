@@ -6,8 +6,6 @@
             <h1 class="text-white">Dashboard</h1>
         </div>
     </router-link>
-    
-
 </template>
 
 <script>

@@ -22,9 +22,19 @@
 
         <!-- Details -->
             <div class="text-center mt-4">
-                <p class="text-2xl font-semibold text-gray-900 tracking-widest">000-000-005</p>
-                <p class="text-lg font-medium text-gray-800 mt-1">Ralph Joseph R. Batiancila</p>
-                <p class="text-sm text-gray-600">BSIT - 2nd Year</p>
+                <div> 
+                    
+                    <p class="text-2xl font-semibold text-gray-900 tracking-widest">000-000-005</p>
+                <!-- Name -->
+                </div>
+                <div>
+                    
+                    <p class="text-lg font-medium text-gray-800">Ralph Joseph Batiancila</p>
+                </div>
+                <div>
+                    <p  class="text-sm text-gray-600">BSIT-2</p>
+                </div>
+                
             </div>
         </div>
     </div>
@@ -36,6 +46,3 @@ export default {
 }
 </script>
 
-<style lang="scss" scoped>
-
-</style>

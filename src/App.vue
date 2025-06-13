@@ -27,6 +27,14 @@ export default{
         '/register/teacher',
         // Teacher Dashboards
         '/dashboard/teacher',
+        '/dashboard/teacher/subject-courses',
+        '/dashboard/teacher/attendance',
+        '/dashboard/teacher/digital-IDs',
+        '/dashboard/teacher/grades',
+        '/dashboard/teacher/announcements',
+        '/dashboard/teacher/contact-concern',
+        '/dashboard/teacher/profile-settings',
+        '/dashboard/teacher/reports',
         // Student Dashboards
         '/dashboard/student',
         '/dashboard/student/subject-courses',
@@ -37,7 +45,15 @@ export default{
         '/dashboard/student/contact-concern',
         '/dashboard/student/profile-settings',
         // Admin Dashboards
-        '/dashboard/admin'
+        '/dashboard/admin',
+        '/dashboard/admin/subject-courses',
+        '/dashboard/admin/attendance',
+        '/dashboard/admin/digital-IDs',
+        '/dashboard/admin/grades',
+        '/dashboard/admin/announcements',
+        '/dashboard/admin/contact-concern',
+        '/dashboard/admin/profile-settings',
+        '/dashboard/admin/reports',
       ]
       return hiddenRoutes.includes(this.$route.path)
     }

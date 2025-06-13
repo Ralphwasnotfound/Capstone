@@ -1,5 +1,20 @@
 <template>
-    <div>
+
+    <!-- ADMIN -->
+    
+    <div v-if="role === 'admin'">
+        <h1>This is the Admin subject-courses</h1>
+    </div>
+
+    <!-- TEACHER -->
+    
+    <div v-else-if="role === 'teacher'">
+        <h1>This is the teacher subject-courses</h1>
+    </div>
+
+    <!-- STUDENT -->
+
+    <div v-else> 
         <div v-if="showSubject" class="bg-white p-6 rounded-xl shadow-md text-gray-800">
             <h1 class="text-2xl font-bold mb-2">Bachelor of Information Technology</h1>
             <h2 class="text-lg font-medium">Regular</h2>
@@ -59,6 +74,10 @@
             editable:{
                 type: Boolean,
                 default: true
+            },
+            role: {
+                type: String,
+                required: true
             }
         },
         data(){

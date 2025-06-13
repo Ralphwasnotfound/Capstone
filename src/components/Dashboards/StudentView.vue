@@ -11,35 +11,43 @@
             </div>
             <!-- Buttons -->
             <div class="w-full overflow-y-auto flex flex-col gap-2 pr-2 scrollbar-thin" style="max-height: calc(100vh - 140px)">
-                <ButtonDashboard :isActive="activeSection === 'dashboard'" 
-                                @click="selectionSection('dashboard')" 
-                                to="/dashboard/student"/>
-                <ButtonSubjectsCourses :isActive="activeSection === 'subject'" 
-                                @click="selectionSection('subject')" 
-                                to="/dashboard/student/subject-courses"/>
-                <ButtonAttendance :isActive="activeSection === 'attendance'" 
-                                @click="selectionSection('attendance')" 
-                                to="/dashboard/student/attendance"/>
-                <ButtonDigitalID :isActive="activeSection === 'digital'" 
-                                @click="selectionSection('digital')" 
-                                to="/dashboard/student/digital-IDs"/>
-                <ButtonGrades :isActive="activeSection === 'grades'" 
-                                @click="selectionSection('grades')" 
-                                to="/dashboard/student/grades"/>
-                <ButtonAnouncements :isActive="activeSection === 'announcements'" 
-                                @click="selectionSection('announcements')" 
-                                to="/dashboard/student/announcements"/>
-                <ButtonConcernContact :isActive="activeSection === 'contact'" 
-                                @click="selectionSection('contact')" 
-                                to="/dashboard/student/contact-concern"/>
-                <ButtonProfileSettings :isActive="activeSection === 'profile'" 
-                                @click="selectionSection('profile')" 
-                                to="/dashboard/student/profile-settings"/>
+                <ButtonDashboard 
+                :isActive="activeSection === 'dashboard'" 
+                @click="selectionSection('dashboard')" 
+                to="/dashboard/student"/>
+                <ButtonSubjectsCourses 
+                :isActive="activeSection === 'subject'" 
+                @click="selectionSection('subject')" 
+                to="/dashboard/student/subject-courses"/>
+                <ButtonAttendance 
+                :isActive="activeSection === 'attendance'" 
+                @click="selectionSection('attendance')" 
+                to="/dashboard/student/attendance"/>
+                <ButtonDigitalID 
+                :isActive="activeSection === 'digital'" 
+                @click="selectionSection('digital')" 
+                to="/dashboard/student/digital-IDs"/>
+                <ButtonGrades 
+                :isActive="activeSection === 'grades'" 
+                @click="selectionSection('grades')" 
+                to="/dashboard/student/grades"/>
+                <ButtonAnouncements 
+                :isActive="activeSection === 'announcements'" 
+                @click="selectionSection('announcements')" 
+                to="/dashboard/student/announcements"/>
+                <ButtonConcernContact 
+                :isActive="activeSection === 'contact'" 
+                @click="selectionSection('contact')" 
+                to="/dashboard/student/contact-concern"/>
+                <ButtonProfileSettings 
+                :isActive="activeSection === 'profile'" 
+                @click="selectionSection('profile')" 
+                to="/dashboard/student/profile-settings"/>
             </div>
         </div>
         
         <div class="flex-1 ml-[250px] p-6 overflow-y-auto h-screen">
-            <component :is="currentComputed" :key="activeSection + '-' + componentKey" />
+            <component :is="currentComputed"  :key="activeSection + '-' + componentKey" />
         </div>
     </div>
 </template>
@@ -73,7 +81,7 @@ export default {
         ButtonAnouncements,
         ButtonConcernContact,
         ButtonProfileSettings,
-        // Seection Components
+        // Section Components
         DashboardHome,
         DashboardSubjectCourse,
         DashboardAttendance,

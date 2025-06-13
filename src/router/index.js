@@ -80,11 +80,59 @@ const router = createRouter({
           return '/login'
         }
         },
+        // TEACHER
         {
           path: 'teacher',
-          name: 'teacher-dashboard',
           component: () => import('@/views/DashBoard.vue'),
+          children: [
+            {
+              path: '',
+              name: 'TeacherDashboard',
+              component: DashboardHome
+            },
+            {
+              path: 'subject-courses',
+              name: 'TeacherSubjectCourses',
+              component: DashboardSubjectCourses,
+            },
+            {
+              path: 'attendance',
+              name: 'TeachertAttendance',
+              component: DashboardAttendance,
+            },
+            {
+              path: 'digital-IDs',
+              name: 'TeacherDigitalIDs',
+              component: DashboardDigitalIDs
+            },
+            {
+              path: 'grades',
+              name: 'TeacherGrades',
+              component: DashboardGrades
+            },
+            {
+              path: 'announcements',
+              name: 'TeacherAnnouncements',
+              component: DashboardAnouncement
+            },
+            {
+              path: 'contact-concern',
+              name: 'TeacherContactConcern',
+              component: DashboardConcernContact
+            },
+            {
+              path: 'profile-settings',
+              name: 'TeacherProfileSettings',
+              component: DashboardProfileSettings
+            },
+            {
+              path: 'reports',
+              name: 'TeacherReports',
+              component: DashboardProfileSettings
+            },
+          ]
         },
+        // STUDENT
         {
           path: 'student',
           component: () => import('@/views/DashBoard.vue'),
@@ -131,10 +179,57 @@ const router = createRouter({
             },
           ]
         },
+        // ADMIN
         {
           path: 'admin',
-          name: 'admin-dashboard',
-          component: () => import('@/views/DashBoard.vue')
+          component: () => import('@/views/DashBoard.vue'),
+          children: [
+            {
+              path: '',
+              name: 'AdminDashboard',
+              component: DashboardHome
+            },
+            {
+              path: 'subject-courses',
+              name: 'AdminSubjectCourses',
+              component: DashboardSubjectCourses,
+            },
+            {
+              path: 'attendance',
+              name: 'AdmintAttendance',
+              component: DashboardAttendance,
+            },
+            {
+              path: 'digital-IDs',
+              name: 'AdminDigitalIDs',
+              component: DashboardDigitalIDs
+            },
+            {
+              path: 'grades',
+              name: 'AdminGrades',
+              component: DashboardGrades
+            },
+            {
+              path: 'announcements',
+              name: 'AdminAnnouncements',
+              component: DashboardAnouncement
+            },
+            {
+              path: 'contact-concern',
+              name: 'AdminContactConcern',
+              component: DashboardConcernContact
+            },
+            {
+              path: 'profile-settings',
+              name: 'AdminProfileSettings',
+              component: DashboardProfileSettings
+            },
+            {
+              path: 'reports',
+              name: 'AdminReports',
+              component: DashboardProfileSettings
+            },
+          ]
         }
       ]
     },

@@ -1,5 +1,19 @@
 <template>
-    <div class="p-6 bg-white shadow rounded-xl">
+
+    <!-- ADMIN -->
+    
+    <div v-if="role === 'admin'">
+        <h1>this is the Admin attendance</h1>
+    </div>
+    <!-- TEACHER -->
+    
+    <div v-else-if="role === 'teacher'">
+        <h1>this is the teacher attendance</h1>
+    </div>
+
+    <!-- STUDENT -->
+    <div v-else>
+        <div class="p-6 bg-white shadow rounded-xl">
         <h2 class="text-xl font-bolc text-gray-800 mb-4">My Attendance</h2>
         <table class="w-full text-sm border-collapse"> 
             <thead class="bg-gray-100 text-left">
@@ -31,11 +45,18 @@
                 </tr>
             </tbody>
         </table>
+        </div>
     </div>
 </template>
 
 <script>
     export default {
+        props:{
+            role:{
+                type: String,
+                required: true
+            }
+        },
         data(){
             return{
                 attendance:[

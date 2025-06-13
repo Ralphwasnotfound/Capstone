@@ -1,5 +1,17 @@
 <template>
-    <div class="max-w-md mx-auto p-6 bg-white rounded shadow">
+
+    <!-- TEACHER -->
+    <div v-if="role === 'admin'">
+        <h1>This is the Admin Concern/Contact</h1>
+    </div>
+
+    <!-- TEACHER -->
+    <div v-else-if="role === 'teacher'">
+        <h1>This is the Teacher Concern/ Contact</h1>
+    </div>
+    <!-- STUDENT -->
+    <div v-else>
+        <div class="max-w-md mx-auto p-6 bg-white rounded shadow">
         <h2 class="text-2xl font-bold mb-4">Submit a Concern or Contact us</h2>
         <form action="" @submit.prevent="handleSubmit">
             <div>
@@ -59,11 +71,18 @@
             <p v-if="error" class="mt-4 text-red-600 font-semibold">Opps, something went wrong. Please try again.</p>
         </form>
 
+        </div>
     </div>
 </template>
 
 <script>
     export default {
+    props:{
+        role: {
+            type: String,
+            required: true
+        }
+    },
         data(){
             return{
                 enableTeacherSelect: false,

@@ -1,5 +1,16 @@
 <template>
-    <div>
+    <!-- ADMIN -->
+    <div v-if="role === 'admin'">
+        <h1>this is the Admin Profile</h1>
+    </div>
+
+    <!-- TEACHER -->
+    <div v-else-if="role === 'teacher'">
+        <h1>this is the teacher Profile</h1>
+    </div>
+    <!-- STUDENT -->
+    <div v-else>
+        <div>
         <!-- Profile Settings and Dashboard -->
         <div class="py-10 flex items-center gap-10">
             <div class="relative w-[150px] h-[150px] rounded-full overflow-hidden"
@@ -185,6 +196,7 @@
                     </ul>
             </section>
         </div>
+        </div>
     </div>
 </template>
 
@@ -195,6 +207,10 @@
             showDetails:{
                 type: Boolean,
                 default: true
+            },
+            role: {
+                type: String,
+                required: true
             }
         },
         data(){
