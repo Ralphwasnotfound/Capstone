@@ -136,6 +136,7 @@ const router = createRouter({
         {
           path: 'student',
           component: () => import('@/views/DashBoard.vue'),
+          props: true,
           children: [
             {
               path: '',

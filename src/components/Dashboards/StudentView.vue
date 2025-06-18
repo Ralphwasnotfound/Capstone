@@ -47,7 +47,10 @@
         </div>
         
         <div class="flex-1 ml-[250px] p-6 overflow-y-auto h-screen">
-            <component :is="currentComputed"  :key="activeSection + '-' + componentKey" />
+            <component :is="currentComputed"  
+            :key="activeSection + '-' + componentKey" 
+            :role="userRole"
+            :showDetails="true"/>
         </div>
     </div>
 </template>
@@ -94,7 +97,8 @@ export default {
     data(){
         return{
             activeSection: '',
-            componentKey: 0
+            componentKey: 0,
+            userRole: 'student'
         }
     },
     computed:{

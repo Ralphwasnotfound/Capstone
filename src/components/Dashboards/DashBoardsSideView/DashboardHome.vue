@@ -33,7 +33,7 @@
     <div v-else>
       <div class="flex justify-between py-2">
         <div class="flex flex-col justify-between">
-          <DashboardProfileSettings :showDetails="false"  />
+          <DashboardProfileSettings :showDetails="false" :role="role"  />
           <div class="h-[300px] overflow-y-auto pr-2 ">
             <DashboardAnouncement />
           </div>
