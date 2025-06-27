@@ -47,7 +47,7 @@
             </div>
 
             <button v-if="isEditing"
-            @click="saveprofile"
+            @click="saveProfile"
             class="mb-4 ml-2 px-4 py-2 bg-green-600 text-white rounded">
             Save Profile
             </button>
@@ -187,6 +187,8 @@
 </template>
 
 <script>
+import { useProfile } from '@/composables/useProfile'
+
     export default {
     props:{
         role: {
@@ -199,12 +201,8 @@
         }
         
         },
-        data(){
-            return{
-                isEditing: false,
-                imageUrl: null,
-                hovering: false,
-                teacher:{
+        setup(){
+            const defaultTeacher = {
                     // Personal Info
                     fullName: 'John Doe',
                     employeeid: '2023123456',
@@ -226,58 +224,34 @@
                     // Guardian Info
                     officeHours: 'Mon–Fri, 9:00 AM – 4:00 PM',
                     roomAssignment: 'IT Faculty Room - Room 205'
-                },
-                originalTeacher: {},
-            }   
-        },
-        methods:{
-            toggleEdit(){
-                if(this.isEditing){
-                    this.teacher = {...this.originalTeacher}
-                    this.isEditing = false
-                }else{
-                    this.originalTeacher = {...this.teacher}
-                    this.isEditing = true
-                }
-            },
-            saveprofile(){
-            localStorage.setItem('teacherProfile', JSON.stringify(this.teacher))
-            this.isEditing = false
-            alert('Profile Save Locally!!')
-            },
-            handleImageClick(){
-                if(this.isEditing){
-                    this.triggerFileInput()
-                }
-            },
-            triggerFileInput(){
-                this.$refs.fileInput.click()
-            },
-            onFileChange(e){
-                const file = e.target.files[0]
-                if(file){
-                    const reader = new FileReader()
-                    reader.onload = e =>{
-                        this.imageUrl = e.target.result
-                    }
-                    reader.readAsDataURL(file)
-                }
-            },
-            validateAge(){
-                if (this.teacher.age > 120){
-                    this.teacher.age = 120
-                }else if(this.teacher.age < 1){
-                    this.teacher.age = 1
-                }
             }
-        },
-        created(){
-                const saved = localStorage.getItem('teacherProfile')
-                if(saved){
-                    this.teacher = JSON.parse(saved)
-                }
-            },
-        
+
+            const {
+                profile,
+                isEditing,
+                imageUrl,
+                hovering,
+                toggleEdit,
+                saveProfile,
+                onFileChange,
+                triggerFileInput,
+                handleImageClick,
+                validateAge
+            } = useProfile(defaultTeacher, 'teacherProfile')
+                
+            return {
+                teacher: profile,
+                isEditing,
+                imageUrl,
+                hovering,
+                toggleEdit,
+                saveProfile,
+                onFileChange,
+                triggerFileInput,
+                handleImageClick,
+                validateAge
+            }
+        }
 }
 </script>
 

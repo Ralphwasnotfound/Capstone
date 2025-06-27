@@ -1,7 +1,7 @@
 <template>
     <div>
         <StudentProfile v-if="role === 'student'" :showDetails="showDetails" :role="role" />
-        <TeacherProfile v-else-if="role === 'teacher'" :role="role" />
+        <TeacherProfile v-else-if="role === 'teacher'" :showDetails="showDetails" :role="role" />
     </div>
 </template>
 

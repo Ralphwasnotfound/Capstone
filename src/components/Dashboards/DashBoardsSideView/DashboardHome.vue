@@ -25,7 +25,7 @@
     <div v-else-if="role === 'teacher'">
       <div class="flex justify-between py-2">
         <div class="flex flex-col justify-between">
-          <h1>This is the teacher Dashboard</h1>
+          <DashboardProfileSettings :showDetails="false" :role="role"/>
         </div>
       </div>
     </div>
@@ -38,9 +38,11 @@
             <DashboardAnouncement />
           </div>
         </div>
-      <DashboardDigitalIDs flippable />
+        <div>
+          <DashboardDigitalIDs flippable />
+        </div>
       </div>
-        <DashboardSubjectCourses :showSubject="false" :editable="false"/>
+          <DashboardSubjectCourses :showSubject="false" :editable="false"/>
     </div>
   </div>
 </template>
@@ -58,7 +60,7 @@ export default {
   components:{
     LogOutButton,
     DashboardProfileSettings,
-    DashboardSubjectCourses,
+    DashboardSubjectCourses,        
     DashboardDigitalIDs,
     DashboardAnouncement 
   },

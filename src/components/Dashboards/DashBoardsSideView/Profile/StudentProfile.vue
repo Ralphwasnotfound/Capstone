@@ -47,7 +47,7 @@
             </div>
 
             <button v-if="isEditing"
-            @click="saveprofile"
+            @click="saveProfile"
             class="mb-4 ml-2 px-4 py-2 bg-green-600 text-white rounded">
             Save Profile
             </button>
@@ -191,95 +191,65 @@
 </template>
 
 <script>
+import { useProfile } from '@/composables/useProfile'
+
 export default {
-    props:{
-        role: {
-            type: String,
-            required: true
-        },
-        showDetails: {
-            type: Boolean,
-            default: true
+    props: {
+    role: {
+        type: String,
+        required: true
+    },
+    showDetails: {
+        type: Boolean,
+        default: true
+    }
+    },
+    setup() {
+    const defaultStudent = {
+        fullName: 'John Doe',
+        id: '2023123456',
+        gender: 'Male',
+        birthdate: '2000-01-01',
+        age: 23,
+        course: 'BS Information Technology',
+        yearlvl: '3rd Year',
+        section: 'Section A',
+        schoolyear: '2024-2025',
+        enrollmentStatus: 'Active',
+        mobileNumber: '09977953461',
+        email: 'john.doe@example.com',
+        address: '1234 Main St, City, County',
+        guardianName: 'Jane Doe',
+        guardianNumber: '09977953461'
+    }
+
+    const {
+        profile,
+        isEditing,
+        imageUrl,
+        hovering,
+        toggleEdit,
+        saveProfile,
+        onFileChange,
+        triggerFileInput,
+        handleImageClick,
+        validateAge
+    } = useProfile(defaultStudent, 'studentProfile')
+
+    return {
+        student: profile,
+        isEditing,
+        imageUrl,
+        hovering,
+        toggleEdit,
+        saveProfile,
+        onFileChange,
+        triggerFileInput,
+        handleImageClick,
+        validateAge
         }
-        
-        },
-        data(){
-            return{
-                isEditing: false,
-                imageUrl: null,
-                hovering: false,
-                student:{
-                    // Personal Info
-                    fullName: 'John Doe',
-                    id: '2023123456',
-                    gender: 'Male',
-                    birthdate: 'January 1, 2000',
-                    age:'23',
-                    // Academic Info
-                    course:'BS Information Technology',
-                    yearlvl: '3rd Year',
-                    section: 'Section A',
-                    schoolyear: '2024-2025',
-                    enrollmentStatus: 'Active',
-                    // Contact Info
-                    mobileNumber: '09977953461',
-                    email:'john.doe@example.com',
-                    address: '1234 Main St, City, County',
-                    // Guardian Info
-                    guardianName: 'Jane Doe',
-                    guardianNumber: '09977953461'
-                },
-                originalStudent: {},
-            }   
-        },
-        methods:{
-            toggleEdit(){
-                if(this.isEditing){
-                    this.student = {...this.originalStudent}
-                    this.isEditing = false
-                }else{
-                    this.originalStudent = {...this.student}
-                    this.isEditing = true
-                }
-            },
-            saveprofile(){
-            localStorage.setItem('studentProfile', JSON.stringify(this.student))
-            this.isEditing = false
-            alert('Profile Save Locally!!')
-            },
-            handleImageClick(){
-                if(this.isEditing){
-                    this.triggerFileInput()
-                }
-            },
-            triggerFileInput(){
-                this.$refs.fileInput.click()
-            },
-            onFileChange(e){
-                const file = e.target.files[0]
-                if(file){
-                    const reader = new FileReader()
-                    reader.onload = e =>{
-                        this.imageUrl = e.target.result
-                    }
-                    reader.readAsDataURL(file)
-                }
-            },
-            validateAge(){
-                if (this.student.age > 120){
-                    this.student.age = 120
-                }else if(this.student.age < 1){
-                    this.student.age = 1
-                }
-            }
-        },
-        created(){
-                const saved = localStorage.getItem('studentProfile')
-                if(saved){
-                    this.student = JSON.parse(saved)
-                }
-            },
-        
+    }
 }
 </script>
+
 
