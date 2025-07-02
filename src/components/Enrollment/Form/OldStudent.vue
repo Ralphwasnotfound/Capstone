@@ -23,6 +23,8 @@
 </template>
 
 <script>
+import { submitEnrollment } from '@/composables/utils/api';
+
 export default {
 data() {
     return {
@@ -34,10 +36,15 @@ data() {
     };
 },
     methods: {
-    submitOldStudentForm() {
-    console.log('Submitting old student data:', this.form);
-      // TODO: Add API call here
-    },
+    async submitEnrollment() {
+        const { success } = await submitEnrollment(this.form, 'old')
+        if (success) {
+            alert('Old student re-enrollment submitted!')
+            this.form = { student_id: '', full_name: '', email: ''}
+        }else {
+            alert('Re-enrollment failed. Please try again')
+        }
+    }
 },
 };
 </script>

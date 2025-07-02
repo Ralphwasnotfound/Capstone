@@ -4,7 +4,7 @@
 
     <div>
         <label for="fullName" class="block font-medium">Full Name</label>
-        <input v-model="form.fullName" id="fullName" type="text" class="border rounded p-2 w-full" required />
+        <input v-model="form.full_name" id="fullName" type="text" class="border rounded p-2 w-full" required />
     </div>
 
     <div>
@@ -12,15 +12,15 @@
         <input v-model="form.email" id="email" type="email" class="border rounded p-2 w-full" required />
     </div>
 
-    <div>
+    <!-- <div>
         <label for="birthdate" class="block font-medium">Birthdate</label>
         <input v-model="form.birthdate" id="birthdate" type="date" class="border rounded p-2 w-full" required />
-    </div>
+    </div> -->
 
-    <div>
+    <!-- <div>
         <label for="course" class="block font-medium">Desired Course</label>
         <input v-model="form.course" id="course" type="text" class="border rounded p-2 w-full" required />
-    </div>
+    </div> -->
 
     <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Enroll</button>
     </form>
@@ -28,21 +28,31 @@
 
 <script>
 import { reactive } from 'vue'
+import { submitEnrollment } from '@/composables/utils/api'
 
 export default {
   name: 'FreshmanEnrollmentForm',
   setup() {
     const form = reactive({
-      fullName: '',
+      full_name: '',
       email: '',
-      birthdate: '',
-      course: '',
     })
 
-    const handleSubmit = () => {
-      console.log('Enrollment submitted:', form)
-      alert('Enrollment form submitted!')
-      // Here you would send `form` data to your server using fetch/axios
+    const handleSubmit = async () => {
+      const payload = {
+        full_name: form.full_name,
+        email: form.email,
+        enrollment_type: 'freshmen'
+      }
+
+      const { success } = await submitEnrollment(payload)
+
+      if (success) {
+        alert('Freshmen enrollment submitted!')
+        Object.keys(form).forEach(key => form[key] = '')
+      } else {
+        alert('Submission failed. Please try again.')
+      }
     }
 
     return {
