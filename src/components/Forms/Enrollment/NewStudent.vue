@@ -12,16 +12,6 @@
         <input v-model="form.email" id="email" type="email" class="border rounded p-2 w-full" required />
     </div>
 
-    <!-- <div>
-        <label for="birthdate" class="block font-medium">Birthdate</label>
-        <input v-model="form.birthdate" id="birthdate" type="date" class="border rounded p-2 w-full" required />
-    </div> -->
-
-    <!-- <div>
-        <label for="course" class="block font-medium">Desired Course</label>
-        <input v-model="form.course" id="course" type="text" class="border rounded p-2 w-full" required />
-    </div> -->
-
     <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Enroll</button>
     </form>
 </template>

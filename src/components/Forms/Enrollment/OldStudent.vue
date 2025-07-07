@@ -1,7 +1,7 @@
 <template>
 <div class="max-w-xl mx-auto bg-white p-6 rounded shadow">
     <h2 class="text-2xl font-bold mb-4">Old Student Re-Enrollment Form</h2>
-    <form @submit.prevent="submitOldStudentForm" class="space-y-4">
+    <form @submit.prevent="handleSubmit" class="space-y-4">
     <div>
         <label class="block mb-1 font-medium">Student ID</label>
         <input v-model="form.student_id" type="text" class="w-full border p-2 rounded" required />
@@ -23,28 +23,39 @@
 </template>
 
 <script>
+import { reactive } from 'vue'
 import { submitEnrollment } from '@/composables/utils/api';
 
 export default {
-data() {
-    return {
-        form: {
-        student_id: '',
-        full_name: '',
-        email: '',
-    },
-    };
-},
-    methods: {
-    async submitEnrollment() {
-        const { success } = await submitEnrollment(this.form, 'old')
+    name: 'OldStudentForm',
+    setup() {
+        const form = reactive({
+            student_id: '',
+            full_name: '',
+            email: ''
+        })
+
+        const handleSubmit = async () => {
+        const payload = {
+            student_id: form.student_id,
+            full_name: form.full_name,
+            email: form.email,
+            enrollment_type: 'old'
+        }
+
+        const { success } = await submitEnrollment(payload)
         if (success) {
-            alert('Old student re-enrollment submitted!')
-            this.form = { student_id: '', full_name: '', email: ''}
-        }else {
-            alert('Re-enrollment failed. Please try again')
+            alert('Old Student successfully Re-enrolled!')
+            Object.keys(form).forEach(key => form[key] = '')
+        }else{
+            alert('Old Student failed to re-enrolled')
         }
     }
-},
-};
+
+    return {
+        form,
+        handleSubmit
+    }
+    }
+}
 </script>

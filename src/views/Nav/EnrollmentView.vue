@@ -19,8 +19,8 @@
 </template>
 
 <script>
-import NewStudent from '@/components/Enrollment/Form/NewStudent.vue';
-import OldStudent from '@/components/Enrollment/Form/OldStudent.vue';
+import NewStudent from '@/components/Forms/Enrollment/NewStudent.vue';
+import OldStudent from '@/components/Forms/Enrollment/OldStudent.vue';
 
 
 export default{

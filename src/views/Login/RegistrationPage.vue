@@ -5,31 +5,48 @@
             <img src="@/assets/img/Logo.png" alt="Logo" class="w-full max-w-xs" />
         </div>
 
-    <!-- Right side: Buttons -->
-        <div class="w-1/2 flex flex-col justify-center items-center gap-10">
-            <StudentButton @click="goToStudentRegister"/>
-            <TeacherButton @click="goToTeacherRegister"/>
+        <div class="w-1/2 flex flex-col justify-center items-center gap-4">
+            <div class="flex gap-4">
+                <button 
+                class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                @click="goTo('student')">
+                    Register as a Student
+                </button>
+
+                <button
+                class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+                @click="goTo('teacher')"
+                >
+                Register as a Teacher
+                </button>
+            </div>
         </div>
+        <RouterView/> 
     </div>
 </template>
 
 
 <script>
-import StudentButton from "@/components/Buttons/StudentButton.vue"
-import TeacherButton from "@/components/Buttons/TeacherButton.vue"
+import { RouterView } from 'vue-router';
+
+
 
 export default{
-    components:{
-        StudentButton, TeacherButton
+    components: {
+        RouterView
     },
-    methods:{
-        goToStudentRegister(){
-        console.log('You Click Me')
-        this.$router.push('/register/student')   
-        },
-        goToTeacherRegister(){
-        console.log('You Click Me Teacher')
-        this.$router.push('/register/teacher')    
+    data(){
+        return {
+            activeForm: null
+        }
+    },
+    methods: {
+        goTo(type) {
+            if (type === 'student') {
+                this.$router.push('/register/student')
+            }else if (type === 'teacher'){
+                this.$router.push('/register/teacher')
+            }
         }
     }
 }
