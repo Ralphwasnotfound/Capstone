@@ -89,7 +89,7 @@
                             min="1"
                             max="120"
                             class="border rounded p-1 w-full"
-                            @input="validateAge">
+                            @input="onAgeInput">
                         </li>
                     </ul>
             </section>
@@ -191,7 +191,7 @@
 </template>
 
 <script>
-import { useProfile } from '@/composables/useProfile'
+import {useProfile, saveProfile, validateAge, handleImageupload, toggleEdit} from '@/composables/useProfile'
 
 export default {
     props: {
@@ -204,49 +204,53 @@ export default {
         default: true
     }
     },
-    setup() {
-    const defaultStudent = {
-        fullName: 'John Doe',
-        id: '2023123456',
-        gender: 'Male',
-        birthdate: '2000-01-01',
-        age: 23,
-        course: 'BS Information Technology',
-        yearlvl: '3rd Year',
-        section: 'Section A',
-        schoolyear: '2024-2025',
-        enrollmentStatus: 'Active',
-        mobileNumber: '09977953461',
-        email: 'john.doe@example.com',
-        address: '1234 Main St, City, County',
-        guardianName: 'Jane Doe',
-        guardianNumber: '09977953461'
-    }
-
-    const {
-        profile,
-        isEditing,
-        imageUrl,
-        hovering,
-        toggleEdit,
-        saveProfile,
-        onFileChange,
-        triggerFileInput,
-        handleImageClick,
-        validateAge
-    } = useProfile(defaultStudent, 'studentProfile')
-
-    return {
-        student: profile,
-        isEditing,
-        imageUrl,
-        hovering,
-        toggleEdit,
-        saveProfile,
-        onFileChange,
-        triggerFileInput,
-        handleImageClick,
-        validateAge
+    data() {
+        return {
+            imageUrl: null,
+            isEditing: false,
+            originalData: {},
+            utils: null,
+            student: {
+                fullName: 'John Doe',
+                id: '2023123456',
+                gender: 'Male',
+                birthdate: '2000-01-01',
+                age: 23,
+                course: 'BS Information Technology',
+                yearlvl: '3rd Year',
+                section: 'Section A',
+                schoolyear: '2024-2025',
+                enrollmentStatus: 'Active',
+                mobileNumber: '09977953461',
+                email: 'john.doe@example.com',
+                address: '1234 Main St, City, County',
+                guardianName: 'Jane Doe',
+                guardianNumber: '09977953461'
+            }
+        }
+    },
+    created() {
+        this.student = useProfile(this.student)
+    },
+    methods: {
+        toggleEdit() {
+            toggleEdit(this)
+        },
+        saveProfile() {
+            saveProfile(this.student)
+            this.isEditing = false
+        },
+        onFileChange(e) {
+            handleImageupload(e, (url) => {
+                this.imageUrl = url
+            })
+        },
+        validateAge() {
+            validateAge(this.student)
+        },
+        onAgeInput() {
+            this.validateAge()
+            this.student.age = this.student.age
         }
     }
 }

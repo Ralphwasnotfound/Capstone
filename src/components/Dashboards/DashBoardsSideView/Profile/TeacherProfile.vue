@@ -187,7 +187,7 @@
 </template>
 
 <script>
-import { useProfile } from '@/composables/useProfile'
+import {useProfile, saveProfile, validateAge, handleImageupload, toggleEdit} from '@/composables/useProfile'
 
     export default {
     props:{
@@ -199,10 +199,13 @@ import { useProfile } from '@/composables/useProfile'
             type: Boolean,
             default: true
         }
-        
-        },
-        setup(){
-            const defaultTeacher = {
+    },
+    data() {
+        return {
+                imageUrl: null,
+                isEditing: false,
+                originalData: {},
+                teacher: {
                     // Personal Info
                     fullName: 'John Doe',
                     employeeid: '2023123456',
@@ -224,34 +227,29 @@ import { useProfile } from '@/composables/useProfile'
                     // Guardian Info
                     officeHours: 'Mon–Fri, 9:00 AM – 4:00 PM',
                     roomAssignment: 'IT Faculty Room - Room 205'
-            }
-
-            const {
-                profile,
-                isEditing,
-                imageUrl,
-                hovering,
-                toggleEdit,
-                saveProfile,
-                onFileChange,
-                triggerFileInput,
-                handleImageClick,
-                validateAge
-            } = useProfile(defaultTeacher, 'teacherProfile')
-                
-            return {
-                teacher: profile,
-                isEditing,
-                imageUrl,
-                hovering,
-                toggleEdit,
-                saveProfile,
-                onFileChange,
-                triggerFileInput,
-                handleImageClick,
-                validateAge
-            }
+                }
+        }   
+    },
+    created() {
+    this.teacher = useProfile(this.teacher)
+    },
+    methods: {
+    toggleEdit() {
+        toggleEdit(this)
+    },
+    saveProfile() {
+        saveProfile(this.teacher)
+        this.isEditing = false
+    },
+    onFileChange(e) {
+        handleImageupload(e, (url) => {
+            this.imageUrl = url
+        })
+    },
+    validateAge() {
+        validateAge(this.teacher)
         }
+    }
 }
 </script>
 
