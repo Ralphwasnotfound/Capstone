@@ -17,38 +17,47 @@
 </template>
 
 <script>
-import { reactive } from 'vue'
-import { submitEnrollment } from '@/composables/utils/api'
+import { submitEnrollment, fetchStudents } from '@/composables/utils/api'
 
 export default {
   name: 'FreshmanEnrollmentForm',
-  setup() {
-    const form = reactive({
-      full_name: '',
-      email: '',
-    })
-
-    const handleSubmit = async () => {
+  data() {
+    return {
+      form: {
+        full_name: '',
+        email: '',
+      },
+      students: []
+    }
+  },
+  methods: {
+    async handleSubmit() {
       const payload = {
-        full_name: form.full_name,
-        email: form.email,
-        enrollment_type: 'freshmen'
+        full_name: this.form.full_name,
+        email: this.form.email,
+        enrollment_type: 'freshmen',
       }
-
       const { success } = await submitEnrollment(payload)
 
       if (success) {
-        alert('Freshmen enrollment submitted!')
-        Object.keys(form).forEach(key => form[key] = '')
+        alert('Enrollment Submitted!')
+        this.form.full_name = ''
+        this.form.email = ''
+        this.loadStudents()
       } else {
-        alert('Submission failed. Please try again.')
+        alert('Submission Failed. Please try Again')
+      }
+    },
+    async loadStudents() {
+      const { success, data } = await fetchStudents()
+      if (success) {
+        this.students = data
       }
     }
-
-    return {
-      form,
-      handleSubmit,
-    }
   },
+  mounted() {
+    this.loadStudents()
+  }
+  
 }
 </script>
