@@ -1,12 +1,12 @@
 import express from 'express'
-import db from '../db.js'
+import { studentDB } from '../db.js'
 
 const router = express.Router()
 
 // GET all students
 router.get('/', async (req, res) => {
     try {
-        const [results] = await db.query('SELECT * FROM students')
+        const [results] = await studentDB.query('SELECT * FROM students')
         res.json(results)
     } catch (err) {
         console.error('DB Query error:', err)
@@ -23,7 +23,7 @@ router.post('/', async (req, res) => {
     }
 
     try {
-        const [results] = await db.query(
+        const [results] = await studentDB.query(
             'INSERT INTO students (full_name, student_id, email, enrollment_type) VALUES (?, ?, ?, ?)',
             [full_name, student_id || null, email, enrollment_type]
     )
