@@ -12,10 +12,20 @@ export function registration(form) {
 
 export async function registerUser(payload){
     try {
-        const response = await api.post('/register', payload)
+        const response = await api.post('/users/register', payload)
         return { success: true, data: response.data}
     } catch (err) {
         console.error('Registration error:', err)
         return { success: false, error: err.response?.data?.error || 'Registration failed'}
+    }
+}
+
+export async function deleteUser (id) {
+    try {
+        const response = await api.delete(`/users/${id}`)
+        return { success: true, data: response.data}
+    }catch (error) {
+        console.log('Delete error:', error)
+        return { success: false, error: error.response?.data?.error || 'Deletion failed' }
     }
 }

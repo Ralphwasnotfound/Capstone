@@ -27,7 +27,7 @@
                 <label for="" class="block mb-1 font-medium">Password</label>
                 <input
                 v-model="form.password" 
-                type="text" 
+                type="password" 
                 class="w-full border p-2 rounded"
                 placeholder="Password"
                 required>
@@ -37,7 +37,7 @@
                 <label for="" class="block mb-1 font-medium">Confirm Password</label>
                 <input
                 v-model="form.confirmPassword"
-                type="text"
+                type="password"
                 class="w-full border p-2 rounded"
                 placeholder="Confirm Password"
                 required>
@@ -65,7 +65,7 @@
 </template>
 
 <script>
-
+import { registration, registerUser } from '@/composables/registration';
 
 export default {
     name: 'StudentRegister',
@@ -81,16 +81,30 @@ export default {
         }
     },
     methods: {
-        handleSubmit() {
-            if(this.form.password !== this.form.confirmPassword) {
-                alert('Password do not match!')
-                return
+        async handleSubmit() {
+            const isValid = registration(this.form)
+            if (!isValid) return
+
+            const payload = {
+                full_name: this.form.fullName,
+                email: this.form.email,
+                password: this.form.password,
+                role: 'student',
+                contact: this.form.contact
             }
 
-            console.log('Registering student:', this.form)
-            alert('Registration Submitted!')
+            const { success, error } = await registerUser(payload)
 
-            // API DATA HERE
+            if(success) {
+                alert('Registration Successfull!')
+                this.form.fullName = ''
+                this.form.email = ''
+                this.form.password = ''
+                this.form.confirmPassword = ''
+                this.form.contact = ''
+            } else {
+                alert(`Registration Failed: ${error}`)
+            }
         }
     }
 }

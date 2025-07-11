@@ -53,6 +53,8 @@
         <div class="flex-1 p-6 overflow-y-auto h-screen">
             <component :is="currentComputed" :role="'admin'" :key="componentKey" />
         </div>
+
+        
     </div>
 </template>
 

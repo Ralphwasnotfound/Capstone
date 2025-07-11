@@ -44,14 +44,15 @@
             </div>
 
             <div>
-                <label for="" class="block mb-1 font-medium">Department</label>
+                <label for="" class="block mb-1 font-medium">Contact Number</label>
                 <input
-                v-model="form.department"
-                type="text"
+                v-model="form.contact" 
+                type="text" 
                 class="w-full border p-2 rounded"
-                placeholder="e.g., Criminology, IT"
+                placeholder="09XXXXXXXXX"
                 required>
             </div>
+
 
             <div class="flex justify-center">
                 <button
@@ -65,7 +66,7 @@
 </template>
 
 <script>
-import { registration } from '@/composables/registration';
+import { registration, registerUser } from '@/composables/registration';
 
 export default {
     data() {
@@ -75,19 +76,33 @@ export default {
                 email: '',
                 password: '',
                 confirmPassword: '',
-                department: '',
+                contact: '',
             }
         }
     },
     methods: {
-        handleSubmit() {
-            const success = registration(this.form)
-            if (success) {
+        async handleSubmit () {
+            const isValid = registration(this.form)
+            if (!isValid) return
+
+            const payload = {
+                full_name: this.form.fullName,
+                email: this.form.email,
+                password: this.form.password,
+                role: 'teacher'
+            }
+
+            const { success, error } = await registerUser(payload)
+
+            if(success) {
+                alert('Registration Successfull!')
                 this.form.fullName = ''
                 this.form.email = ''
                 this.form.password = ''
                 this.form.confirmPassword = ''
-                this.form.department = ''
+                this.form.contact = ''
+            } else {
+                alert(`Registration Failed: ${error}`)
             }
         }
     }

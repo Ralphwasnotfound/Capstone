@@ -25,5 +25,14 @@ export async function fetchStudents() {
         return { success: false, error}
     } 
 }
+export async function fetchUsers() {
+    try {
+        const response = await api.get('/users')
+        return { success: true, data: response.data }
+    }catch (error) {
+        console.error('Fetch users failed:', error)
+        return { success: false, error}
+    }
+}
 
 export default api

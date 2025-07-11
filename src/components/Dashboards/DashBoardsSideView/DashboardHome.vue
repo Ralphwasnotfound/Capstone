@@ -16,7 +16,7 @@
     <div v-if="role === 'admin'">
       <div class="flex justify-between py-2">
         <div class="flex flex-col justify-between">
-          <h1>This is the Admin Dashboard</h1>
+          <UserTable :users="users"/>
         </div>
       </div>
     </div>
@@ -53,6 +53,8 @@ import DashboardProfileSettings from './DashboardProfileSettings.vue';
 import DashboardSubjectCourses from './DashboardSubjectCourses.vue';
 import DashboardDigitalIDs from './DashboardDigitalIDs.vue';
 import DashboardAnouncement from './DashboardAnouncement.vue';
+import UserTable from '../Admin/UserTable.vue';
+import { fetchUsers } from '@/composables/utils/api';
 
 
 
@@ -62,7 +64,8 @@ export default {
     DashboardProfileSettings,
     DashboardSubjectCourses,        
     DashboardDigitalIDs,
-    DashboardAnouncement 
+    DashboardAnouncement,
+    UserTable 
   },
   props: {
     role: {
@@ -74,6 +77,19 @@ export default {
     logout(){
       localStorage.clear()
       this.$router.push('/login')
+    }
+  },
+  data() {
+    return {
+      users: [],
+    }
+  },
+  async mounted() {
+    const { success, data } = await fetchUsers()
+    if (success) {
+      this.users = data
+    } else {
+      alert('Failed to load users.')
     }
   }
 }
