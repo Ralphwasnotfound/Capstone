@@ -35,4 +35,14 @@ export async function fetchUsers() {
     }
 }
 
+export async function deleteUserById(id) {
+    try {
+        const response = await api.get(`/users/${id}`)
+        return { success: true, data: response.data }
+    }catch (error) {
+        console.error('Delete Error:', error)
+        return { success: false, error: error.response?.data?.error || 'Delete Failed'}
+    }
+}
+
 export default api

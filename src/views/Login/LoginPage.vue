@@ -6,7 +6,7 @@
     </div>
 
     <div class="w-1/2 flex justify-center items-center ">
-        <form @submit.prevent="handleLogin" class="bg-[#052e50] p-8 rounded shadow-md w-full max-w-md">
+        <!-- <form @submit.prevent="handleLogin" class="bg-[#052e50] p-8 rounded shadow-md w-full max-w-md">
             <h2 class="text-2xl font-bold mb-6 text-center text-[#d3b36d]">Log In</h2>
             <div class="mb-4">
                 <label class="block mb-1 font-medium text-[#d3b36d]">Username</label>
@@ -19,13 +19,19 @@
             </div>
 
             <button class="w-full bg-[#2e5974] text-white py-2 rounded hover:bg-blue-600 transition">Login</button>
-        </form>
+        </form> -->
+        <LoginForm/>
     </div>
 </div>
 </template>
 
 <script>
+import LoginForm from '@/components/Forms/Login/LoginForm.vue'
+
 export default{
+    components:{
+        LoginForm
+    },
     data(){
         return{
             username: '',

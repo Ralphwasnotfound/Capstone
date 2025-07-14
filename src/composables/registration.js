@@ -20,12 +20,25 @@ export async function registerUser(payload){
     }
 }
 
-export async function deleteUser (id) {
+// DELETE USER
+export async function deleteUserbyId (id) {
     try {
         const response = await api.delete(`/users/${id}`)
         return { success: true, data: response.data}
     }catch (error) {
         console.log('Delete error:', error)
         return { success: false, error: error.response?.data?.error || 'Deletion failed' }
+    }
+}
+
+// LOGIN USER
+
+export async function loginUser(payload) {
+    try {
+        const response = await api.post('/user/login', payload)
+        return { success: true, data: response.data}
+    } catch (err) {
+        console.error('Login Error:', err)
+        return { success: false, error: err.response?.data?.error || 'Login Failed'}
     }
 }

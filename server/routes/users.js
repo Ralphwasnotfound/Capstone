@@ -55,7 +55,7 @@ try {
 })
 
 // DELETE a USER
-app.delete ('/:id', async (req, res) => {
+app.deleteUser ('/:id', async (req, res) => {
     const { id } = req.params
     try {
         const [ result ] = await userDB.query('DELETE FROM users WHERE id = ?', [id])

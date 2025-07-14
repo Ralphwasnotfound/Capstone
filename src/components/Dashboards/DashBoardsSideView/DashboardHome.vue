@@ -16,7 +16,7 @@
     <div v-if="role === 'admin'">
       <div class="flex justify-between py-2">
         <div class="flex flex-col justify-between">
-          <UserTable :users="users"/>
+          <UserTable :users="users" @user-deleted="removeUser"/>
         </div>
       </div>
     </div>
@@ -77,6 +77,9 @@ export default {
     logout(){
       localStorage.clear()
       this.$router.push('/login')
+    },
+    remove(id) {
+      this.users = this.users.filter(user => user.id !== id)
     }
   },
   data() {
