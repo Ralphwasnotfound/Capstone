@@ -4,9 +4,9 @@ import EnrollmentView from '@/views/Nav/EnrollmentView.vue'
 import DigitalID from '@/views/Nav/Digital_ID.vue'
 import Grades from '@/views/Nav/GradesView.vue'
 import Admin from '@/views/Nav/AdminContactView.vue'
-import Login from '@/views/Login/LoginPage.vue'
-import Register from '@/views/Login/RegistrationPage.vue'
-import DashBoard from '@/views/DashBoard.vue'
+import Login from '@/views/Auth/LoginPage.vue'
+import Register from '@/views/Auth/RegistrationPage.vue'
+import DashBoard from '@/views/Auth/Dashboard.vue'
 // Dashboards
 import DashboardHome from '@/components/Dashboards/DashBoardsSideView/DashboardHome.vue'
 import DashboardSubjectCourses from '@/components/Dashboards/DashBoardsSideView/DashboardSubjectCourses.vue'
@@ -90,7 +90,7 @@ const router = createRouter({
         // TEACHER
         {
           path: 'teacher',
-          component: () => import('@/views/DashBoard.vue'),
+          component: () => import('@/views/Auth/Dashboard.vue'),
           children: [
             {
               path: '',
@@ -142,7 +142,7 @@ const router = createRouter({
         // STUDENT
         {
           path: 'student',
-          component: () => import('@/views/DashBoard.vue'),
+          component: () => import('@/views/Auth/Dashboard.vue'),
           props: true,
           children: [
             {
@@ -190,7 +190,7 @@ const router = createRouter({
         // ADMIN
         {
           path: 'admin',
-          component: () => import('@/views/DashBoard.vue'),
+          component: () => import('@/views/Auth/Dashboard.vue'),
           children: [
             {
               path: '',

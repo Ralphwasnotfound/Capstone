@@ -29,8 +29,8 @@
 </template>
 
 <script>
-import BackCardID from '@/components/Cards/BackCardID.vue';
-import FrontCardID from '@/components/Cards/FrontCardID.vue';
+import BackCardID from '@/components/Common/Cards/BackCardID.vue';
+import FrontCardID from '@/components/Common/Cards/FrontCardID.vue';
 
 
 

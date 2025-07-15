@@ -21,8 +21,8 @@
 <script>
 import LoginButton from '@/components/Buttons/LoginButton.vue'
 import RegisterButton from '@/components/Buttons/RegisterButton.vue'
-import LineDesign from '@/components/Random/LineDesign.vue'
-import CardView from '@/components/Cards/CardView.vue'
+import LineDesign from '@/components/Common/Random/LineDesign.vue'
+import CardView from '@/components/Common/Cards/CardView.vue'
 
 export default {
     components: {
