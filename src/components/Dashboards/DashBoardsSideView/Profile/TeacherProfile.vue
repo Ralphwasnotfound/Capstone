@@ -33,7 +33,7 @@
         </div>
 
                 <div class="flex flex-col">
-                    <h1 class="text-[60px] text-start">{{ teacher.fullName }}</h1>
+                    <h1 class="text-[60px] text-start">{{ teacher.full_name }}</h1>
                     <h1 class="text-[20px] text-start">{{ teacher.department }} <br>{{ teacher.rank }} / {{ teacher.specialization }}</h1>
                 </div>
         </div>
@@ -58,14 +58,14 @@
                         <!-- Teacher Name -->
                         <li>
                             <label for="name" class="block font-semibold">Full Name:</label>
-                            <div v-if="!isEditing">{{ teacher.fullName }}</div>
-                            <input v-else v-model="teacher.fullName" id="name" type="text" class="border rounded p-1 w-full">
+                            <div v-if="!isEditing">{{ teacher.full_name }}</div>
+                            <input v-else v-model="teacher.full_name" id="name" type="text" class="border rounded p-1 w-full">
                         </li>
                         <!-- Teacher ID -->
                         <li>
                             <label for="id" class="block font-semibold">Employee ID:</label>
-                            <div v-if="!isEditing">{{ teacher.employeeid }}</div>
-                            <input v-else v-model="teacher.employeeid" id="id" type="text" class="border rounded p-1 w-full">
+                            <div v-if="!isEditing">{{ teacher.id }}</div>
+                            <input v-else v-model="teacher.id" id="id" type="text" class="border rounded p-1 w-full">
                         </li>
                         <!-- Teacher GENDER -->
                         <li>
@@ -205,33 +205,16 @@ import {useProfile, saveProfile, validateAge, handleImageupload, toggleEdit} fro
                 imageUrl: null,
                 isEditing: false,
                 originalData: {},
-                teacher: {
-                    // Personal Info
-                    fullName: 'John Doe',
-                    employeeid: '2023123456',
-                    gender: 'Male',
-                    birthdate: 'January 1, 2000',
-                    age:'23',
-
-                    // Academic Personal Info
-                    department: 'College of Information Technology',
-                    specialization: 'Web Development & Database Systems',
-                    rank: 'Instructor II',
-                    yearsExperience: '12',
-                    employmentStatus: 'Full-Time',
-
-                    // Contact Info
-                    mobileNumber: '09171234567',
-                    email: 'maria.santos@college.edu.ph',
-                    address: '456 Teacher’s Village, City, Province',
-                    // Guardian Info
-                    officeHours: 'Mon–Fri, 9:00 AM – 4:00 PM',
-                    roomAssignment: 'IT Faculty Room - Room 205'
-                }
+                teacher: { }
         }   
     },
     created() {
-    this.teacher = useProfile(this.teacher)
+    const user = JSON.parse(localStorage.getItem('user'))
+    if (user) {
+        this.teacher = useProfile(user)
+    } else {
+        this.student = { ...this.teacher, ...user}
+    }
     },
     methods: {
     toggleEdit() {

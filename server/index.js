@@ -1,22 +1,24 @@
 import express from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv'
+import morgan from 'morgan'
 dotenv.config()
 
 import studentRoutes from './routes/student.js'
 import userRoutes from './routes/users.js'
 
 const app = express()
+app.use(morgan('dev'))
 app.use(cors())
 app.use(express.json())
 
 // Routes
 app.use('/students', studentRoutes)
-app.use('/users', userRoutes)
+app.use('/api/users', userRoutes)
 
 // Root
 app.get('/', (req, res) => {
-    res.send('Enrollment System API is Running')
+    res.send('System API is Running')
 })
 
 // Start server

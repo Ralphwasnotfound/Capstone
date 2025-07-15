@@ -33,7 +33,7 @@
         </div>
 
                 <div class="flex flex-col">
-                    <h1 class="text-[60px] text-start">{{ student.fullName }}</h1>
+                    <h1 class="text-[60px] text-start">{{ student.full_name }}</h1>
                     <h1 class="text-[20px] text-start">{{ student.course }} <br>{{ student.section }} / {{ student.yearlvl }}</h1>
                 </div>
         </div>
@@ -58,8 +58,8 @@
                         <!-- NAME -->
                         <li>
                             <label for="name" class="block font-semibold">Full Name:</label>
-                            <div v-if="!isEditing">{{ student.fullName }}</div>
-                            <input v-else v-model="student.fullName" id="name" type="text" class="border rounded p-1 w-full">
+                            <div v-if="!isEditing">{{ student.full_name }}</div>
+                            <input v-else v-model="student.full_name" id="name" type="text" class="border rounded p-1 w-full">
                         </li>
                         <!-- ID -->
                         <li>
@@ -210,27 +210,16 @@ export default {
             isEditing: false,
             originalData: {},
             utils: null,
-            student: {
-                fullName: 'John Doe',
-                id: '2023123456',
-                gender: 'Male',
-                birthdate: '2000-01-01',
-                age: 23,
-                course: 'BS Information Technology',
-                yearlvl: '3rd Year',
-                section: 'Section A',
-                schoolyear: '2024-2025',
-                enrollmentStatus: 'Active',
-                mobileNumber: '09977953461',
-                email: 'john.doe@example.com',
-                address: '1234 Main St, City, County',
-                guardianName: 'Jane Doe',
-                guardianNumber: '09977953461'
-            }
+            student: { }
         }
     },
     created() {
-        this.student = useProfile(this.student)
+        const user = JSON.parse(localStorage.getItem('user'))
+        if (user) {
+            this.student = useProfile(user)
+        } else {
+            this.student = { ...this.student, ...user}
+        }
     },
     methods: {
         toggleEdit() {

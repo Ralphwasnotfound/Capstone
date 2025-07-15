@@ -32,10 +32,9 @@ export async function deleteUserbyId (id) {
 }
 
 // LOGIN USER
-
 export async function loginUser(payload) {
     try {
-        const response = await api.post('/user/login', payload)
+        const response = await api.post('/api/users/login', payload)
         return { success: true, data: response.data}
     } catch (err) {
         console.error('Login Error:', err)
