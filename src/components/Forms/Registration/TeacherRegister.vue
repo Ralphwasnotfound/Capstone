@@ -89,7 +89,8 @@ export default {
                 full_name: this.form.fullName,
                 email: this.form.email,
                 password: this.form.password,
-                role: 'teacher'
+                role: 'teacher',
+                contact: this.form.contact
             }
 
             const { success, error } = await registerUser(payload)

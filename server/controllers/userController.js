@@ -29,6 +29,7 @@ export const registerUser = async (req, res) => {
     }
 }
 
+// LOGIN
 export const loginUser = async (req, res) => {
     const { email, password } = req.body
 
@@ -57,16 +58,47 @@ export const loginUser = async (req, res) => {
     }
 }
 
+
 export const getUsers = async (req, res) => {
     try {
-        const [users] = await userDB.query('SELECT id, full_name, email, role, contact, created_at FROM users')
-        res.json(users)
+        const [users] = await userDB.query(`SELECT 
+            id, 
+            full_name, 
+            email, 
+            role, 
+            contact,
+            created_at 
+            FROM users WHERE email != 'admin@default.com'`)
+        res.json({users})
     } catch (err) {
         console.error('Fetch users error:', err)
         res.status(500).json({ error: 'Server error while fetching users' })
     }
 }
 
+// Default ADMIN
+export const createDefaultAdmin = async () => {
+    const defaultEmail = 'admin@default.com'
+    const defaultPassword = 'admin123' // or use environment variable
+    const defaultName = 'Default Admin'
+    const role = 'admin'
+    const contact = '0000-000-0000'
+
+    const [existing] = await userDB.query('SELECT * FROM users WHERE email = ?', [defaultEmail])
+    if (existing.length === 0) {
+        const hashedPassword = await bcrypt.hash(defaultPassword, 10)
+        await userDB.query(
+            'INSERT INTO users (id, full_name, email, password, role, contact) VALUES (?, ?, ?, ?, ?, ?)',
+            [1 ,defaultName, defaultEmail, hashedPassword, role, contact]
+        )
+        console.log('Default admin created')
+    } else {
+        console.log('Default admin already exists')
+    }
+}
+
+
+// DELETE USERS
 export const deleteUser = async ( req , res ) => {
     const { id } = req.params
     try {
@@ -80,5 +112,4 @@ export const deleteUser = async ( req , res ) => {
         res.status(500).json({ error: 'Server error during Deletion'})
     }
 }
-
 

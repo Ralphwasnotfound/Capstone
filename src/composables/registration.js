@@ -34,10 +34,11 @@ export async function deleteUserbyId (id) {
 // LOGIN USER
 export async function loginUser(payload) {
     try {
-        const response = await api.post('/api/users/login', payload)
+        const response = await api.post('/users/login', payload)
         return { success: true, data: response.data}
     } catch (err) {
         console.error('Login Error:', err)
         return { success: false, error: err.response?.data?.error || 'Login Failed'}
     }
 }
+

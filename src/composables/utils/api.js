@@ -25,19 +25,22 @@ export async function fetchStudents() {
         return { success: false, error}
     } 
 }
+
+// USERS
 export async function fetchUsers() {
     try {
-        const response = await api.get('/api/users')
+        const response = await api.get('/users')
         return { success: true, data: response.data }
-    }catch (error) {
+    } catch (error) {
         console.error('Fetch users failed:', error)
         return { success: false, error}
     }
 }
 
+// DELETE USER BY ID
 export async function deleteUserById(id) {
     try {
-        const response = await api.get(`/api/users/${id}`)
+        const response = await api.delete(`/users/${id}`)
         return { success: true, data: response.data }
     }catch (error) {
         console.error('Delete Error:', error)

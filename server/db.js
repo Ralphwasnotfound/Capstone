@@ -30,7 +30,7 @@ export const userDB = mysql.createPool({
 
         const conn2 = await userDB.getConnection()
         console.log('MySql Connection Established')
-        conn1.release()
+        conn2.release()
 
 
     } catch (err) {
