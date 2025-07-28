@@ -1,4 +1,5 @@
 import bcrypt from 'bcrypt'
+import jwt from 'jsonwebtoken'
 import { userDB } from '../db.js' 
 
 export const registerUser = async (req, res) => {
@@ -50,8 +51,14 @@ export const loginUser = async (req, res) => {
             return res.status(401).json({ error: 'Invalid Email or Password'})
         }
 
+        const token = jwt.sign(
+            { id: user.id, role: user.role},
+            process.env.JWT_SECRET || 'secret123',
+            {expiresIn: '1h'}
+        )
+
         delete user.password
-        res.json({ message: 'Login Successful', user})
+        res.json({ message: 'Login Successful',token, user})
     } catch (err) {
         console.error('Login Error:', err)
         res.status(500).json({ error: 'Server error'})
@@ -112,4 +119,6 @@ export const deleteUser = async ( req , res ) => {
         res.status(500).json({ error: 'Server error during Deletion'})
     }
 }
+
+
 

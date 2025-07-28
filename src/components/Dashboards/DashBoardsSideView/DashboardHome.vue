@@ -17,6 +17,7 @@
       <div class="flex justify-between py-2">
         <div class="flex flex-col justify-between">
           <UserTable :users="users" @user-deleted="removeUser"/>
+          <StudentEnrollmentTable :students="students" class="pt-10"/>
         </div>
       </div>
     </div>
@@ -55,6 +56,8 @@ import DashboardDigitalIDs from './DashboardDigitalIDs.vue';
 import DashboardAnouncement from './DashboardAnouncement.vue';
 import UserTable from '../Admin/UserTable.vue';
 import { fetchUsers } from '@/composables/utils/api';
+import { fetchStudents } from '@/composables/utils/api';
+import StudentEnrollmentTable from '../Admin/StudentEnrollmentTable.vue';
 
 
 
@@ -65,7 +68,8 @@ export default {
     DashboardSubjectCourses,        
     DashboardDigitalIDs,
     DashboardAnouncement,
-    UserTable 
+    UserTable,
+    StudentEnrollmentTable
   },
   props: {
     role: {
@@ -85,14 +89,20 @@ export default {
   data() {
     return {
       users: [],
+      students: [],
     }
   },
-  async mounted() {
-    const { success, data } = await fetchUsers()
-    if (success) {
-      this.users = data
-    } else {
-      alert('Failed to load users.')
+    async mounted() {
+    try {
+      const [usersRes, studentsRes] = await Promise.all([
+        fetchUsers(),
+        fetchStudents()
+      ])
+
+      if (usersRes.success) this.users = usersRes.data
+      if (studentsRes.success) this.students = studentsRes.data
+    } catch (err) {
+      console.error('Error Loading Data:', err)
     }
   }
 }

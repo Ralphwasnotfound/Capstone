@@ -4,6 +4,15 @@ const api = axios.create({
     baseURL: 'http://localhost:3000', 
 })
 
+api.interceptors.request.use((config) => {
+    const token = localStorage.getItem('token')
+    if (token) {
+        config.headers['Authorization'] = `Bearer ${token}`
+        console.log('Authorization Header:', config.headers['Authorization'])
+    }
+    return config
+})
+
 export async function submitEnrollment(payload) {
     try {
         const response = await api.post('/students', payload)
@@ -19,7 +28,10 @@ export async function submitEnrollment(payload) {
 export async function fetchStudents() {
     try {
         const response = await api.get('/students')
-        return { success: true, data: response.data}
+
+        const filteredData = response.data.map(({ id, ...rest }) => rest)
+
+        return { success: true, data: filteredData}
     } catch (error) {
         console.error('Fetch students error:', error)
         return { success: false, error}

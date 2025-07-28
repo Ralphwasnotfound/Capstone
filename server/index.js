@@ -2,6 +2,7 @@ import express from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv'
 import morgan from 'morgan'
+import { verifyToken } from './middleware/auth.js' 
 import { createDefaultAdmin } from './controllers/userController.js'
 
 dotenv.config()
@@ -16,14 +17,13 @@ app.use(cors())
 app.use(express.json())
 
 // Routes
-app.use('/students', studentRoutes)
+app.use('/students', verifyToken, studentRoutes)
 app.use('/users', userRoutes)
 
 // Root
 app.get('/', (req, res) => {
     res.send('System API is Running')
 })
-
 
 // Start server
 const PORT = process.env.PORT || 3000

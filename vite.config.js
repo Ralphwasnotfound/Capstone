@@ -17,7 +17,8 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      '/users': 'http://localhost:3000'
+      '/users': 'http://localhost:3000',
+      '/students': 'http://localhost:3000'
     }
   }
 })

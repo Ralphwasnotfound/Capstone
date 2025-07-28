@@ -1,10 +1,12 @@
 <template>
-    <!-- STUDENTS -->
+    <!-- ACCOUNTS -->
+    <div>
+        <h1>ACCOUNTS</h1>
         <div>
+            <!-- STUDENTS -->
             <table class="w-full border mt-6">
                 <thead class="bg-gray-100">
                     <tr>
-                        <th class="p-2 text-left">ID</th>
                         <th class="p-2 text-left">Full Name</th>
                         <th class="p-2 text-left">Email</th>
                         <th class="p-2 text-left">Role</th>
@@ -15,7 +17,6 @@
                 </thead>
                 <tbody>
                     <tr v-for="user in students" :key="user.id">
-                        <td class="p-2">{{ user.id }}</td>
                         <td class="p-2">{{ user.full_name }}</td>
                         <td class="p-2">{{ user.email }}</td>
                         <td class="p-2">{{ user.role }}</td>
@@ -37,7 +38,6 @@
             <table class="w-full border mt-6">
                 <thead class="bg-gray-100">
                     <tr>
-                        <th class="p-2 text-left">ID</th>
                         <th class="p-2 text-left">Full Name</th>
                         <th class="p-2 text-left">Email</th>
                         <th class="p-2 text-left">Role</th>
@@ -48,7 +48,6 @@
                 </thead>
                 <tbody>
                     <tr v-for="user in teachers" :key="user.id">
-                        <td class="p-2">{{ user.id }}</td>
                         <td class="p-2">{{ user.full_name }}</td>
                         <td class="p-2">{{ user.email }}</td>
                         <td class="p-2">{{ user.role }}</td>
@@ -65,6 +64,9 @@
                 </tbody>
             </table>
         </div>
+    </div>
+
+    
 </template>
 
 <script>

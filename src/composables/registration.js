@@ -35,6 +35,7 @@ export async function deleteUserbyId (id) {
 export async function loginUser(payload) {
     try {
         const response = await api.post('/users/login', payload)
+        localStorage.setItem('token', response.data.token)
         return { success: true, data: response.data}
     } catch (err) {
         console.error('Login Error:', err)
