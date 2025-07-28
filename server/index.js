@@ -12,9 +12,15 @@ import userRoutes from './routes/users.js'
 
 // Middleware
 const app = express()
-app.use(morgan('dev'))
-app.use(cors())
 app.use(express.json())
+app.use(morgan('dev'))
+app.use(cors({
+    origin: 'http://localhost:5173', 
+    methods: 'GET,POST,PUT,DELETE',
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true
+}));
+
 
 // Routes
 app.use('/students', verifyToken, studentRoutes)

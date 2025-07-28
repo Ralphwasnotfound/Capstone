@@ -61,6 +61,7 @@ export default {
         }
     },
     mounted() {
+        console.log('Token before fetch:', localStorage.getItem('token'))
         this.fetchStudents()
     }
 }
