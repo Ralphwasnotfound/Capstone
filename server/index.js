@@ -2,6 +2,7 @@ import express from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv'
 import morgan from 'morgan'
+import { studentDB } from './db.js'
 import { verifyToken } from './middleware/auth.js' 
 import { createDefaultAdmin } from './controllers/userController.js'
 
@@ -30,6 +31,7 @@ app.use('/users', userRoutes)
 app.get('/', (req, res) => {
     res.send('System API is Running')
 })
+
 
 // Start server
 const PORT = process.env.PORT || 3000

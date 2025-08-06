@@ -6,18 +6,18 @@ const api = axios.create({
 
 api.interceptors.request.use((config) => {
     const token = localStorage.getItem('token')
-    console.log('Token from localStorage:', token)
+    
     if (token) {
         config.headers['Authorization'] = `Bearer ${token}`
-        console.log('Authorization Header:', config.headers['Authorization'])
-    }
+        
+    }    
     return config
 })
 
 export async function submitEnrollment(payload) {
     try {
         const response = await api.post('/students', payload)
-        console.log('Enrollment Succes:', response.data)
+        
         return {success: true, data: response.data
             }
     }catch (error) {
@@ -30,9 +30,8 @@ export async function fetchStudents() {
     try {
         const response = await api.get('/students')
 
-        const filteredData = response.data.map(({ id, ...rest }) => rest)
 
-        return { success: true, data: filteredData}
+        return { success: true, data: response.data}
     } catch (error) {
         console.error('Fetch students error:', error)
         return { success: false, error}
@@ -58,6 +57,16 @@ export async function deleteUserById(id) {
     }catch (error) {
         console.error('Delete Error:', error)
         return { success: false, error: error.response?.data?.error || 'Delete Failed'}
+    }
+}
+
+export async function approveStudentById(id) {
+    try {
+        const res = await api.put(`/students/${id}/approve`)
+        return res.data
+    } catch (err) {
+        console.error('Approval Failed:', err)
+        throw err
     }
 }
 

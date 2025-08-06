@@ -11,16 +11,27 @@
                         <th class="p-2 text-left">Status</th>
                         <th class="p-2 text-left">Enrollment Type</th>
                         <th class="p-2 text-left">Date Enrolled</th>
+                        <th class="p-2 text-left">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr v-for="student in students" :key="student.id">
+                        {{ console.log(student) }}
                         <td class="p-2">{{ student.full_name }}</td>
                         <td class="p-2">{{ student.student_id }}</td>
                         <td class="p-2">{{ student.email }}</td>
                         <td class="p-2">{{ student.status }}</td>
                         <td class="p-2">{{ student.enrollment_type }}</td>
                         <td class="p-2">{{ formatDate(student.created_at) }}</td>
+                        <td class="py-2">
+                            <button
+                            v-if="student.status !== 'Enrolled'"
+                            @click="approveStudent(student.id)"
+                            class="bg-blue-500 text-white px-3 py-1 rounded">
+                            Aprove
+                            </button>
+                            <span v-else class="text-green-600 font-semibold"></span>
+                        </td>
                     </tr>
                 </tbody>
             </table>
@@ -29,7 +40,7 @@
 </template>
 
 <script>
-import { fetchStudents } from '@/composables/utils/api'
+import { fetchStudents, approveStudentById } from '@/composables/utils/api'
 
 export default {
     name: 'StudentEnrollmentTable',
@@ -57,6 +68,21 @@ export default {
                 console.log('fetched Students:', this.students)
             } else {
                 console.error('FETCH students failed:', res.error)
+            }
+        },
+        async approveStudent(id) {
+            try {
+                console.log('👉 Approving student with ID:', id)
+                const data = await approveStudentById(id)
+                if (data.success) {
+                    alert('Student Approved:' + data.student_id)
+                    await this.fetchStudents()
+                } else {
+                    alert('Approval failed.')
+                }
+            } catch (err) {
+                console.error('Approval Error:', err)
+                alert('Something went wrong')
             }
         }
     },

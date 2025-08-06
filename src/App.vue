@@ -54,6 +54,8 @@ export default{
         '/dashboard/admin/contact-concern',
         '/dashboard/admin/profile-settings',
         '/dashboard/admin/reports',
+        // STUDENT ENROLLMENT PAGE
+        '/student-enrollment'
       ]
       return hiddenRoutes.includes(this.$route.path)
     }

@@ -37,3 +37,27 @@ export const createStudent =  async (req, res) => {
         res.status(500).json({ error: 'Insert failed' })
     }
 }
+
+export const approveStudent = async (req, res) => {
+    const { id } = req.params
+
+    try {
+        const studentId = 'STD-' + new Date().getFullYear() + '-' + Math.floor(1000 + Math.random() * 9000)
+
+        const [results] = await studentDB.query(
+            'UPDATE students SET status = ?, student_id = ? WHERE id = ?',
+            ['approved', studentId, id]
+            
+        )
+
+        if (results.affectedRows === 0) {
+            return res.status(404).json({ error: 'Student not found'})
+        }
+
+        res.json({ success: true, message: 'Student approved successfully', student_id: studentId})
+    } catch (err) {
+        console.error('Approve Error:', err)
+        res.status(500).json({ error: 'Approve Failed'})
+
+    }
+}

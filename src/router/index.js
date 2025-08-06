@@ -19,6 +19,9 @@ import DashboardProfileSettings from '@/components/Dashboards/DashBoardsSideView
 // Registration
 import StudentRegister from '@/components/Forms/Registration/StudentRegister.vue'
 import TeacherRegister from '@/components/Forms/Registration/TeacherRegister.vue'
+// Enrollment Page
+import StudentEnrollmentPage from '@/views/Auth/StudentEnrollmentPage.vue'
+
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -70,6 +73,14 @@ const router = createRouter({
       name:'register-teacher',
       component: () => import('@/components/Forms/Registration/TeacherRegister.vue')
     },
+
+    // STUDENT ENROLLMENT PAGE
+    {
+      path: '/student-enrollment',
+      name: 'StudentEnrollment',
+      component: () => import('@/views/Auth/StudentEnrollmentPage.vue')
+    },
+
     
     // DASHBOARD
     {
