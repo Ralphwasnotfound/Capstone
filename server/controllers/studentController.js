@@ -1,6 +1,5 @@
 import { studentDB } from '../db.js' 
 
-
 export const getStudents =  async (req, res) => {
     try {
         const [results] = await studentDB.query('SELECT * FROM students')
@@ -39,25 +38,47 @@ export const createStudent =  async (req, res) => {
 }
 
 export const approveStudent = async (req, res) => {
-    const { id } = req.params
-
     try {
-        const studentId = 'STD-' + new Date().getFullYear() + '-' + Math.floor(1000 + Math.random() * 9000)
+        const { id } = req.params
 
-        const [results] = await studentDB.query(
+        // Update the student's status to approved
+        await studentDB.query(
             'UPDATE students SET status = ?, student_id = ? WHERE id = ?',
-            ['approved', studentId, id]
-            
+            [
+                'approved',
+                `STD-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
+                id
+            ]
         )
 
-        if (results.affectedRows === 0) {
-            return res.status(404).json({ error: 'Student not found'})
-        }
+        res.json({ success: true, message: 'Student approved'})
+    } catch(err) {
+        console.error(err)
+        res.status(500).json({success: false, message: err.message})
+    }
+    
+}
 
-        res.json({ success: true, message: 'Student approved successfully', student_id: studentId})
+export const getPendingStudents = async (req, res) => {
+    try {
+        const [results] = await studentDB.query(
+            'SELECT * FROM students WHERE status = ?',
+            ['pending']
+        )
+        res.json(results)
     } catch (err) {
-        console.error('Approve Error:', err)
-        res.status(500).json({ error: 'Approve Failed'})
+        res.status(500).json({ error: err.message})
+    }
+}
 
+export const getEnrolledStudents = async (req, res) => {
+    try {
+        const [results] = await studentDB.query(
+            'SELECT * FROM students WHERE status = ?',
+            ['approved']
+        )
+        res.json(results)
+    } catch (err) {
+        res.status(500).json({ error: err.message})
     }
 }

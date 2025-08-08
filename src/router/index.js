@@ -21,6 +21,7 @@ import StudentRegister from '@/components/Forms/Registration/StudentRegister.vue
 import TeacherRegister from '@/components/Forms/Registration/TeacherRegister.vue'
 // Enrollment Page
 import StudentEnrollmentPage from '@/views/Auth/StudentEnrollmentPage.vue'
+import EnrollmentsView from '@/components/Dashboards/Admin/Enrollments/EnrollmentsView.vue'
 
 
 const router = createRouter({
@@ -79,6 +80,11 @@ const router = createRouter({
       path: '/student-enrollment',
       name: 'StudentEnrollment',
       component: () => import('@/views/Auth/StudentEnrollmentPage.vue')
+    },
+    {
+      path: '/admin/enrollments',
+      name: 'Enrollments',
+      component:() => import('@/components/Dashboards/Admin/Enrollments/EnrollmentsView.vue')
     },
 
     

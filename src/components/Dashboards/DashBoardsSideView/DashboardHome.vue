@@ -17,7 +17,13 @@
       <div class="flex justify-between py-2">
         <div class="flex flex-col justify-between">
           <UserTable :users="users" @user-deleted="removeUser"/>
-          <StudentEnrollmentTable :students="students" class="pt-10"/>
+          
+
+          <router-link to="/admin/enrollments">
+            <button
+            class="bg-blue-500 text-white px-3 py-1 rounded"
+            >Enrollments</button>
+          </router-link>
         </div>
       </div>
     </div>
@@ -58,7 +64,6 @@ import DashboardAnouncement from './DashboardAnouncement.vue';
 import UserTable from '../Admin/UserTable.vue';
 import { fetchUsers } from '@/composables/utils/api';
 import { fetchStudents } from '@/composables/utils/api';
-import StudentEnrollmentTable from '../Admin/StudentEnrollmentTable.vue';
 
 
 
@@ -70,7 +75,6 @@ export default {
     DashboardDigitalIDs,
     DashboardAnouncement,
     UserTable,
-    StudentEnrollmentTable
   },
   props: {
     role: {

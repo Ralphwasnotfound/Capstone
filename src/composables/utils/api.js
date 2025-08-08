@@ -70,4 +70,15 @@ export async function approveStudentById(id) {
     }
 }
 
+export async function fetchPendingStudents() {
+    const res = await api.get('/students/pending')
+    return { success: true, data: res.data }
+}
+
+export async function fetchEnrolledStudents() {
+    const res = await api.get('/students/enrolled') 
+    return { success: true, data: res.data }
+}
+// enrollment
+
 export default api
