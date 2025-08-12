@@ -15,7 +15,7 @@ export function verifyToken(req, res, next) {
             return res.status(401).json({ error: 'Unauthorized' });
         }
         console.log('Decoded User:', decoded);
-        req.user = decoded;
+        req.user = { id :decoded.userId || decoded.id || decoded.sub};
         next();
     });
 }

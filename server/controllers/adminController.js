@@ -23,3 +23,38 @@ const enrollStudent = async (req, res) => {
         res.status(500).json({ success: false, message: err.message })
     }
 }
+
+export const approveStudent = async (req, res) => {
+    try {
+        const { studentId } = req.params
+
+        //Example subjectts (could come from a config table instead)
+        const defaultSubjects = [
+            { name: 'Math 101', code: 'M101'},
+            { name: 'English 101', code: ' E101' },
+            { name: 'Science 101', code: ' S101'}
+        ]
+
+        const updatedStudent = await studentId.findByIdAndUpdate(
+            studentId,
+            {
+                status: 'enrolled',
+                subjects: defaultSubjects
+            },
+            { new: true}
+        )
+
+        if (!updatedStudent) {
+            return res.status(404).json({error: 'Student not found'})
+        }
+
+        res.json({
+            message: 'Student Approved and enrolled Successfully',
+            student: updatedStudent
+        })
+    } catch (err) {
+        console.error(err)
+        res.status(500).json({error:'Server Error'})
+    }
+}
+

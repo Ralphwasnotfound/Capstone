@@ -10,32 +10,63 @@ export const getStudents =  async (req, res) => {
     }
 }
 
-export const createStudent =  async (req, res) => {
-    const { full_name, student_id, email, enrollment_type } = req.body
+export const createStudent = async (req, res) => {
+    const { full_name, student_id, email, enrollment_type } = req.body;
 
     if (!full_name || !email || !enrollment_type) {
-        return res.status(400).json({ error: 'Missing required fields' })
+        return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    // Support both id and userId in the token
+    const userId = req.user.id || req.user.userId;
+
+    if (!userId) {
+        return res.status(400).json({ error: 'Invalid token: no user ID found' });
     }
 
     try {
         const [results] = await studentDB.query(
-            'INSERT INTO students (full_name, student_id, email, enrollment_type) VALUES (?, ?, ?, ?)',
-            [full_name, student_id || null, email, enrollment_type]
-    )
+            `INSERT INTO students (full_name, student_id, email, enrollment_type, user_id) 
+            VALUES (?, ?, ?, ?, ?)`,
+            [full_name, student_id || null, email, enrollment_type, userId]
+        );
 
-    res.status(201).json({
-        id: results.insertId,
-        full_name,
-        student_id,
-        email,
-        enrollment_type,
-        status: 'pending',
-        })
+        res.status(201).json({
+            id: results.insertId,
+            full_name,
+            student_id,
+            email,
+            enrollment_type,
+            status: 'pending',
+            user_id: userId
+        });
     } catch (err) {
-        console.error('Insert Error:', err)
-        res.status(500).json({ error: 'Insert failed' })
+        console.error('Insert Error:', err);
+        res.status(500).json({ error: 'Insert failed' });
     }
-}
+};
+
+export const getStudentByMe = async (req, res) => {
+    const userId = req.user.id || req.user.userId;
+    console.log('Searching student for userId:', userId);
+
+    try {
+        const [results] = await studentDB.query(
+            'SELECT * FROM students WHERE user_id = ? LIMIT 1',
+            [userId]
+        );
+
+        if (!results.length) {
+            console.warn(`No student found for user_id: ${userId}`);
+            return res.status(404).json({ message: 'Student not found' });
+        }
+
+        res.json(results[0]);
+    } catch (err) {
+        console.error('Error querying student by user_id:', err)
+        res.status(500).json({ error: 'Server Error while fething student', details: err.message });
+    }
+};
 
 export const approveStudent = async (req, res) => {
     try {
