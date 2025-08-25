@@ -79,6 +79,39 @@ export async function fetchEnrolledStudents() {
     const res = await api.get('/students/enrolled') 
     return { success: true, data: res.data }
 }
-// enrollment
+
+// Grades
+// get Grades for a student
+export async function fetchGradesByStudent(studentId) {
+    try {
+        const res = await api.post(`/grades/${studentId}`)
+        return { success: true, data: res.data}
+    } catch (err) {
+        console.err('Fetch grades failed', err)
+        return { success: false, error: err}
+    }
+}
+
+// Teacher adds a grade
+export async function createGrade(payload) {
+    try {
+        const res = await api.post('/grades',payload)
+        return {success: true, data: res.data}
+    } catch (err) {
+        console.error('Create grade failed:', err)
+        return { success: false, error: err}
+    }
+}
+
+// Teacher updates a grade
+export async function updateGrade(id, payload) {
+    try {
+        const res = await api.put(`/grades/${id}`, payload)
+        return { success: true, data: res.data}
+    } catch (err) {
+        console.error('Update gade failed:', err)
+        return { success: false, error: err}
+    }
+}
 
 export default api

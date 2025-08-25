@@ -1,46 +1,63 @@
 <template>
-  <header >
-    <div class="flex justify-end items-center mx-10 pt-5">
-      <img class="w-[8%] absolute left-44 top-2 " src="@/assets/img/Logo.png" alt="Logo">
-      <div class="flex gap-10 text-[25px]">
-        <RouterLink to="/">Home</RouterLink>
-        <RouterLink to="/enroll">Enrollment</RouterLink>
-        <RouterLink to="/digital-ID">Digital ID</RouterLink>
-        <RouterLink to="/grades">Grades</RouterLink>
-        <RouterLink to="/admin">Contact & Support</RouterLink>
-        <div class="flex gap-5 justify-center items-center">
-          <LoginButton @click="goToLogin" class="text-[20px]"/>
-          <Register @click="goToRegister" class="text-[20px]"/>
+  <header class="top-0 left-0 w-full bg-white shadow-md z-50">
+    <div class="flex justify-between items-center px-8 py-4">
+      
+      <!-- Logo -->
+      <RouterLink to="/" class="flex items-center gap-2">
+        <img src="@/assets/img/PCC/PCC.png" alt="Logo" class="w-14 md:w-16">
+        <span class="text-xl font-bold text-[#37555e] hidden md:block">
+          PCC
+        </span>
+      </RouterLink>
+
+      <!-- Nav + Buttons on Right -->
+      <div class="flex items-center gap-8">
+        <!-- Nav Links -->
+        <nav class="hidden md:flex gap-8 text-lg font-medium text-gray-700 items-center">
+          <RouterLink to="/" class="hover:text-[#37555e] transition">Home</RouterLink>
+
+          <!-- Programs Dropdown -->
+          <div class="relative group">
+            <button class="hover:text-[#37555e] transition">Programs ▾</button>
+            <div class="absolute hidden group-hover:block bg-white shadow-md mt-2 rounded w-40 z-50">
+              <RouterLink to="/programs/bsit" class="block px-4 py-2 hover:bg-gray-100">BSIT</RouterLink>
+              <RouterLink to="/programs/bsed" class="block px-4 py-2 hover:bg-gray-100">BSED</RouterLink>
+              <RouterLink to="/programs/bsba" class="block px-4 py-2 hover:bg-gray-100">BSBA</RouterLink>
+              <RouterLink to="/programs/bsa" class="block px-4 py-2 hover:bg-gray-100">BSA</RouterLink>
+            </div>
+          </div>
+
+          <RouterLink to="/enroll" class="hover:text-[#37555e] transition">Enrollment</RouterLink>
+          <RouterLink to="/digital-ID" class="hover:text-[#37555e] transition">Digital ID</RouterLink>
+          <RouterLink to="/grades" class="hover:text-[#37555e] transition">Grades</RouterLink>
+          <RouterLink to="/admin" class="hover:text-[#37555e] transition">Contact & Support</RouterLink>
+        </nav>
+
+        <!-- Buttons -->
+        <div class="hidden md:flex">
+          <LoginButton @click="goToLogin" class="px-4 py-2 text-sm" />
         </div>
       </div>
-    </div>
-    <div class="mx-full mt-3">
-      <hr class="w-full h-[2px] bg-[#37555e] border-0" />
+
+      <!-- Mobile Menu Button -->
+      <button class="md:hidden p-2 rounded-lg hover:bg-gray-100">
+        ☰
+      </button>
     </div>
   </header>
 </template>
 
-<script >
+<script>
 import LoginButton from '@/components/Buttons/LoginButton.vue'
-import Register from '@/components/Buttons/RegisterButton.vue'
 
-
-export default{
+export default {
   components: {
-    LoginButton, Register
+    LoginButton,
   },
   methods: {
     goToLogin() {
       this.$router.push('/login')
-      console.log('You Log In')
     },
-    goToRegister(){
-      this.$router.push('/register')
-      console.log('You Registerd')
-    }
   }
 }
-
 </script>
-
-

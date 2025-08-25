@@ -2,7 +2,8 @@ import express from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv'
 import morgan from 'morgan'
-import { studentDB } from './db.js'
+import gradesRoutes from './routes/gradesRoutes.js';
+
 import { verifyToken } from './middleware/auth.js' 
 import { createDefaultAdmin } from './controllers/userController.js'
 
@@ -16,16 +17,18 @@ const app = express()
 app.use(express.json())
 app.use(morgan('dev'))
 app.use(cors({
-    origin: 'http://localhost:5173', 
+    origin: ['http://localhost:5173'], 
     methods: 'GET,POST,PUT,DELETE',
     allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: true
+    credentials: true,
+    
 }));
 
 
 // Routes
 app.use('/students', verifyToken, studentRoutes)
 app.use('/users', userRoutes)
+app.use('/grades', gradesRoutes)
 
 // Root
 app.get('/', (req, res) => {
