@@ -1,28 +1,23 @@
 import express from 'express';
 import { verifyToken } from '../middleware/auth.js';
-import { studentDB } from '../db.js';
-import {
-    getStudents,
+import { getStudents, 
     createStudent,
-    approveStudent,
-    getPendingStudents,
-    getEnrolledStudents,
-    getStudentByMe
-} from '../controllers/studentController.js';
+     approveStudent, 
+     getStudentById, 
+     enrollStudent ,
+     getStudentByMe,
+     getEnrolledStudents, 
+     getPendingStudents } from '../controllers/studentController.js';
 
 const router = express.Router();
 
-// ----- LISTS -----
 router.get('/', verifyToken, getStudents);
-router.get('/pending', verifyToken, getPendingStudents);
-router.get('/enrolled', verifyToken, getEnrolledStudents);
-
-// ----- SPECIFIC USER -----
-router.get('/me', verifyToken, getStudentByMe)
-
-
-// ----- CREATE / UPDATE -----
 router.post('/', verifyToken, createStudent);
 router.put('/:id/approve', verifyToken, approveStudent);
+router.post('/:id/enroll', verifyToken, enrollStudent);
+router.get('/pending', verifyToken, getPendingStudents);
+router.get('/enrolled', verifyToken, getEnrolledStudents);
+router.get('/me', verifyToken, getStudentByMe);
+router.get('/:id', verifyToken, getStudentById);
 
 export default router;

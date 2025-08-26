@@ -1,7 +1,7 @@
 <template>
     <div>
-        <div v-if="-grade" class="modal bg-white p-4 shadow-lg rounded" >
-            <h3 class="text-lg font-bold mb-2">Edit Grade - {{  gade.subject_name }}</h3>
+        <div v-if="grade" class="modal bg-white p-4 shadow-lg rounded" >
+            <h3 class="text-lg font-bold mb-2">Edit Grade - {{  grade.subject_name }}</h3>
 
             <form @submit.prevent="submitGrade">
                 <div class="mb-2">
@@ -42,8 +42,19 @@ import { updateGrade } from '@/composables/utils/api';
         },
         data() {
             return {
-                localGrade: this.grade.grade ?? '',
-                localRemarks: this.grade.remarks ?? ''
+                localGrade: '',
+                localRemarks: ''
+            }
+        },
+        watch:{
+            grade: {
+                immediate: true,
+                handler(newVal) {
+                    if (newVal) {
+                        this.localGrade = newVal.grade ?? ''
+                        this.localRemarks = newVal.remarks ?? ''
+                    }
+                }
             }
         },
         methods: {
@@ -63,10 +74,16 @@ import { updateGrade } from '@/composables/utils/api';
 
 <style scoped>
 .modal {
-    position: absolute;
-    top: 20%;
-    left: 50%;
-    transform: translate(-50%);
-    width: 300px;
+  position: fixed;
+  top: 20%;
+  left: 50%;
+  transform: translate(-50%, -20%);
+  width: 300px;
+  background: white;
+  padding: 1rem;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+  border-radius: 0.5rem;
+  z-index: 1000;
 }
+
 </style>

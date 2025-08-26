@@ -2,7 +2,6 @@ import express from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv'
 import morgan from 'morgan'
-import gradesRoutes from './routes/gradesRoutes.js';
 
 import { verifyToken } from './middleware/auth.js' 
 import { createDefaultAdmin } from './controllers/userController.js'
@@ -11,6 +10,8 @@ dotenv.config()
 
 import studentRoutes from './routes/student.js'
 import userRoutes from './routes/users.js'
+import gradesRoutes from './routes/grades.js';
+import subjectsRoutes from './routes/subjects.js';
 
 // Middleware
 const app = express()
@@ -29,6 +30,7 @@ app.use(cors({
 app.use('/students', verifyToken, studentRoutes)
 app.use('/users', userRoutes)
 app.use('/grades', gradesRoutes)
+app.use('/subjects', subjectsRoutes)
 
 // Root
 app.get('/', (req, res) => {

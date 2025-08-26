@@ -1,5 +1,9 @@
 import express from 'express';
-import { getGradesByStudent, createGrade, updateGrade } from '../controllers/gradesController.js';
+import { 
+    getGradesByStudent, 
+    createGrade, 
+    updateGrade 
+} from '../controllers/gradesController.js';
 
 const router = express.Router();
 

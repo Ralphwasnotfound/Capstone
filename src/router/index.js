@@ -17,11 +17,9 @@ import DashboardAnouncement from '@/components/Dashboards/DashBoardsSideView/Das
 import DashboardConcernContact from '@/components/Dashboards/DashBoardsSideView/DashboardConcernContact.vue'
 import DashboardProfileSettings from '@/components/Dashboards/DashBoardsSideView/DashboardProfileSettings.vue'
 // Registration
-import StudentRegister from '@/components/Forms/Registration/StudentRegister.vue'
-import TeacherRegister from '@/components/Forms/Registration/TeacherRegister.vue'
+
 // Enrollment Page
-import StudentEnrollmentPage from '@/views/Auth/StudentEnrollmentPage.vue'
-import EnrollmentsView from '@/components/Dashboards/Admin/Enrollments/EnrollmentsView.vue'
+import SubjectSelectionView from '@/views/Auth/SubjectSelectionPage.vue'
 
 
 const router = createRouter({
@@ -86,8 +84,12 @@ const router = createRouter({
       name: 'Enrollments',
       component:() => import('@/components/Dashboards/Admin/Enrollments/EnrollmentsView.vue')
     },
-
-    
+    {
+      path: '/student/:id/subjects',
+      name: 'SubjectSelection',
+      component: SubjectSelectionView,
+      props: true,
+    },
     // DASHBOARD
     {
       path: '/dashboard',

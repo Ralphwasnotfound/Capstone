@@ -56,9 +56,10 @@ export default{
         '/dashboard/admin/reports',
         // STUDENT ENROLLMENT PAGE
         '/student-enrollment',
-        '/admin/enrollments'
+        '/admin/enrollments',
       ]
-      return hiddenRoutes.includes(this.$route.path)
+      return hiddenRoutes.includes(this.$route.path) || 
+      /^\/student\/\d+\/subjects$/.test(this.$route.path)
     }
   }
 }

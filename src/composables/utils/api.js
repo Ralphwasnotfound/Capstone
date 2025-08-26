@@ -114,4 +114,26 @@ export async function updateGrade(id, payload) {
     }
 }
 
+// Subjects
+
+export async function fetchSubjects() {
+    try {
+        const res = await api.get('/subjects')
+        return { success: true, data:res.data }
+    } catch (err) {
+        console.error('Fetch Subjects Failed', err)
+        return { success: false, error: err}
+    }
+}
+
+export async function enrollStudent(studentId, subjectId) {
+    try {
+        const res = await api.post(`/students/${studentId}/enroll`, {subjectId})
+        return {success: true, data: res.data}
+    } catch (err) {
+        console.error('Enrollment Failed', err)
+        return { success: false, error: err}
+    }
+}
+
 export default api

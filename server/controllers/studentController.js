@@ -1,115 +1,176 @@
-import { studentDB } from '../db.js' 
+import { studentDB } from '../db.js';
 
-export const getStudents =  async (req, res) => {
+// Get all students
+export const getStudents = async (req, res) => {
     try {
-        const [results] = await studentDB.query('SELECT * FROM students')
-        res.json(results)
+        const [results] = await studentDB.query('SELECT * FROM students');
+        res.json(results);
     } catch (err) {
-        console.error('DB Query error:', err)
-        res.status(500).json({ error: 'Database query failed' })
+        console.error(err);
+        res.status(500).json({ error: 'Database query failed' });
     }
-}
+};
 
+// Create a student
 export const createStudent = async (req, res) => {
     const { full_name, student_id, email, enrollment_type } = req.body;
-
-    if (!full_name || !email || !enrollment_type) {
-        return res.status(400).json({ error: 'Missing required fields' });
-    }
-
-    // Support both id and userId in the token
     const userId = req.user.id || req.user.userId;
-
-    if (!userId) {
-        return res.status(400).json({ error: 'Invalid token: no user ID found' });
-    }
+    if (!full_name || !email || !enrollment_type || !userId)
+        return res.status(400).json({ error: 'Missing required fields' });
 
     try {
-        const [results] = await studentDB.query(
-            `INSERT INTO students (full_name, student_id, email, enrollment_type, user_id) 
-            VALUES (?, ?, ?, ?, ?)`,
-            [full_name, student_id || null, email, enrollment_type, userId]
+        // Generate student_id if not provided
+        const generatedStudentId = student_id || `STD-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+
+        const [result] = await studentDB.query(
+            'INSERT INTO students (full_name, student_id, email, enrollment_type, user_id) VALUES (?, ?, ?, ?, ?)',
+            [full_name, generatedStudentId, email, enrollment_type, userId]
         );
 
         res.status(201).json({
-            id: results.insertId,
+            id: result.insertId,
             full_name,
-            student_id,
+            student_id: generatedStudentId,
             email,
             enrollment_type,
             status: 'pending',
             user_id: userId
         });
     } catch (err) {
-        console.error('Insert Error:', err);
+        console.error(err);
         res.status(500).json({ error: 'Insert failed' });
     }
 };
 
+
+// Get student by token
+export const getStudentById = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const [students] = await studentDB.query('SELECT * FROM students WHERE id = ?', [id]);
+    if (!students.length) return res.status(404).json({ message: 'Student not found' });
+    const student = students[0];
+
+    const [subjects] = await studentDB.query(
+      `SELECT s.id, s.name, s.code, s.units
+       FROM subjects s
+       INNER JOIN enrollments e ON s.id = e.subject_id
+       WHERE e.student_id = ?`,
+      [student.id]
+    );
+
+    student.subjects = subjects || [];
+    res.json(student);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// Get student info for the currently logged-in user
 export const getStudentByMe = async (req, res) => {
-    const userId = req.user.id || req.user.userId;
-    console.log('Searching student for userId:', userId);
+  try {
+    const userId = req.user.id || req.user.userId; // from JWT or session
+
+    // Fetch the student associated with this user
+    const [students] = await studentDB.query(
+      'SELECT * FROM students WHERE user_id = ? LIMIT 1',
+      [userId]
+    );
+
+    if (!students.length) return res.status(404).json({ message: 'Student not found' });
+
+    const student = students[0];
+
+    // Fetch enrolled subjects for this student
+    const [subjects] = await studentDB.query(
+      `SELECT s.id, s.name, s.code, s.units
+       FROM subjects s
+       INNER JOIN enrollments e ON s.id = e.subject_id
+       WHERE e.student_id = ?`,
+      [student.id]
+    );
+
+    student.subjects = subjects || [];
+    res.json(student);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// Approve student and optionally enroll in subjects
+// Approve student and optionally enroll in subjects
+export const approveStudent = async (req, res) => {
+    const { id } = req.params;
+    const { subjectIds } = req.body;
 
     try {
-        const [results] = await studentDB.query(
-            'SELECT * FROM students WHERE user_id = ? LIMIT 1',
-            [userId]
+        // Update student status
+        await studentDB.query(
+            'UPDATE students SET status = ? WHERE id = ?',
+            ['approved', id]
         );
 
-        if (!results.length) {
-            console.warn(`No student found for user_id: ${userId}`);
-            return res.status(404).json({ message: 'Student not found' });
+        // Only enroll if subjectIds is provided and is an array
+        if (Array.isArray(subjectIds) && subjectIds.length > 0) {
+            const enrollPromises = subjectIds.map(subId =>
+                studentDB.query(
+                    'INSERT IGNORE INTO enrollments (student_id, subject_id) VALUES (?, ?)', 
+                    [id, subId]
+                )
+            );
+            await Promise.all(enrollPromises);
         }
 
-        res.json(results[0]);
+        res.json({ success: true, message: 'Student approved and enrolled' });
     } catch (err) {
-        console.error('Error querying student by user_id:', err)
-        res.status(500).json({ error: 'Server Error while fething student', details: err.message });
+        console.error(err);
+        res.status(500).json({ success: false, message: err.message });
     }
 };
 
-export const approveStudent = async (req, res) => {
+
+// Enroll a single subject
+export const enrollStudent = async (req, res) => {
+    const studentId = req.params.id;
+    const { subjectId } = req.body;
+    if (!subjectId) return res.status(400).json({ message: 'SubjectId is required' });
+
     try {
-        const { id } = req.params
-
-        // Update the student's status to approved
-        await studentDB.query(
-            'UPDATE students SET status = ?, student_id = ? WHERE id = ?',
-            [
-                'approved',
-                `STD-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
-                id
-            ]
-        )
-
-        res.json({ success: true, message: 'Student approved'})
-    } catch(err) {
-        console.error(err)
-        res.status(500).json({success: false, message: err.message})
+        await studentDB.query('INSERT IGNORE INTO enrollments (student_id, subject_id) VALUES (?, ?)', [studentId, subjectId]);
+        res.json({ success: true, message: 'Enrolled Successfully' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false, message: 'Database Error' });
     }
-    
-}
+};
 
+// Get all pending students
 export const getPendingStudents = async (req, res) => {
-    try {
-        const [results] = await studentDB.query(
-            'SELECT * FROM students WHERE status = ?',
-            ['pending']
-        )
-        res.json(results)
-    } catch (err) {
-        res.status(500).json({ error: err.message})
-    }
-}
+  try {
+    const [students] = await studentDB.query(
+      'SELECT * FROM students WHERE status = ?',
+      ['pending']
+    );
+    res.json({ success: true, data: students });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
 
+// Get all approved/enrolled students
 export const getEnrolledStudents = async (req, res) => {
-    try {
-        const [results] = await studentDB.query(
-            'SELECT * FROM students WHERE status = ?',
-            ['approved']
-        )
-        res.json(results)
-    } catch (err) {
-        res.status(500).json({ error: err.message})
-    }
-}
+  try {
+    const [students] = await studentDB.query(
+      'SELECT * FROM students WHERE status = ?',
+      ['approved']
+    );
+    res.json({ success: true, data: students });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
