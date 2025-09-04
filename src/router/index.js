@@ -6,7 +6,7 @@ import Grades from '@/views/Nav/GradesView.vue'
 import Admin from '@/views/Nav/AdminContactView.vue'
 import Login from '@/views/Auth/LoginPage.vue'
 import Register from '@/views/Auth/RegistrationPage.vue'
-import DashBoard from '@/views/Auth/Dashboard.vue'
+
 // Dashboards
 import DashboardHome from '@/components/Dashboards/DashBoardsSideView/DashboardHome.vue'
 import DashboardSubjectCourses from '@/components/Dashboards/DashBoardsSideView/DashboardSubjectCourses.vue'
@@ -94,12 +94,12 @@ const router = createRouter({
     {
       path: '/dashboard',
       name: 'dashboard',
-      component: DashBoard,
+      component: () => import('@/views/Auth/DashBoard.vue'),
       children:[
         {
           path: '',
           redirect: () => {
-          const role = localStorage.getItem('role')
+          const role = sessionStorage.getItem('role')
           if (role === 'teacher') return '/dashboard/teacher'
           if (role === 'student') return '/dashboard/student'
           if (role === 'admin') return '/dashboard/admin'
@@ -109,7 +109,7 @@ const router = createRouter({
         // TEACHER
         {
           path: 'teacher',
-          component: () => import('@/views/Auth/Dashboard.vue'),
+          component: () => import('@/views/Auth/DashBoard.vue'),
           children: [
             {
               path: '',
@@ -161,7 +161,7 @@ const router = createRouter({
         // STUDENT
         {
           path: 'student',
-          component: () => import('@/views/Auth/Dashboard.vue'),
+          component: () => import('@/views/Auth/DashBoard.vue'),
           props: true,
           children: [
             {
@@ -209,7 +209,7 @@ const router = createRouter({
         // ADMIN
         {
           path: 'admin',
-          component: () => import('@/views/Auth/Dashboard.vue'),
+          component: () => import('@/views/Auth/DashBoard.vue'),
           children: [
             {
               path: '',
@@ -264,7 +264,7 @@ const router = createRouter({
 })
 
 router.beforeEach((to, from, next) => {
-  const role = localStorage.getItem('role');
+  const role = sessionStorage.getItem('role');
   const isAuthenticated = ['student', 'teacher', 'admin'].includes(role);
 
   if (to.path === '/dashboard' && !isAuthenticated) {

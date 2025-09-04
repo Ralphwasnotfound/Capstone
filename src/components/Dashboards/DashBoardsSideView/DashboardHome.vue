@@ -84,7 +84,7 @@ export default {
   },
   methods:{
     logout(){
-      localStorage.clear()
+      sessionStorage.clear()
       this.$router.push('/login')
     },
     remove(id) {

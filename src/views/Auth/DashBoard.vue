@@ -21,7 +21,7 @@ export default {
     },
     computed:{
         role(){
-            return localStorage.getItem('role') || null
+            return sessionStorage.getItem('role') || null
         },
         dashboardComponent(){
             switch(this.role){
@@ -37,7 +37,7 @@ export default {
         }
     },
     created(){
-        const role = localStorage.getItem('role')
+        const role = sessionStorage.getItem('role')
         const validRoles = ['student','teacher','admin']
 
         if(!validRoles.includes(role)){

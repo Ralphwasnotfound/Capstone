@@ -71,13 +71,21 @@ export async function approveStudentById(id) {
 }
 
 export async function fetchPendingStudents() {
-    const res = await api.get('/students/pending')
-    return { success: true, data: res.data }
+    try {
+        const res = await api.get('/students/pending')
+        return { success: res.data.success, data: res.data.data}
+    } catch (err) {
+        return { success: false, error: err}
+    }
 }
 
 export async function fetchEnrolledStudents() {
-    const res = await api.get('/students/enrolled') 
-    return { success: true, data: res.data }
+    try {
+        const res = await api.get('/students/enrolled')
+        return { success: res.data.success, data: res.data.data }
+    } catch (err) {
+        return { success: false, error: err}
+    }
 }
 
 // Grades
@@ -132,6 +140,16 @@ export async function enrollStudent(studentId, subjectId) {
         return {success: true, data: res.data}
     } catch (err) {
         console.error('Enrollment Failed', err)
+        return { success: false, error: err}
+    }
+}
+
+export async function fetchSubjectsByCourse(courseId) {
+    try {
+        const res = await api.get(`/subjects/course/${courseId}`)
+        return { success: true, data: res.data}
+    } catch (err) {
+        console.error('Fetch Subjects By Course Failed', err)
         return { success: false, error: err}
     }
 }

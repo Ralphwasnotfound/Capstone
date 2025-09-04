@@ -57,8 +57,8 @@ export default {
     async handleLogin() {
       const { success, data, error } = await loginUser(this.form)
       if (success) {
-        localStorage.setItem('user', JSON.stringify(data.user))
-        localStorage.setItem('role', data.user.role)
+        sessionStorage.setItem('user', JSON.stringify(data.user))
+        sessionStorage.setItem('role', data.user.role)
         alert('Login successful')
         this.$router.push('/dashboard')
     } else {

@@ -11,6 +11,9 @@
             <th class="p-2 text-left">Email</th>
             <th class="p-2 text-left">Status</th>
             <th class="p-2 text-left">Enrollment Type</th>
+            <th class="p-2 text-left">Course</th>
+            <th class="p-2 text-left">Year</th>
+            <th class="p-2 text-left">Semester</th>
             <th class="p-2 text-left">Date Enrolled</th>
             <th class="p-2 text-left">Actions</th>
           </tr>
@@ -24,8 +27,13 @@
             <td class="p-2">{{ student.full_name || 'N/A' }}</td>
             <td class="p-2">{{ student.student_id || 'N/A' }}</td>
             <td class="p-2">{{ student.email || 'N/A' }}</td>
-            <td class="p-2">{{ student.status || 'Pending' }}</td>
+            <td class="p-2">
+              {{ student.status && student.status.trim() !== '' ? student.status : 'Pending' }}
+            </td>
             <td class="p-2">{{ student.enrollment_type || 'N/A' }}</td>
+            <td class="p-2">{{ student.course }}</td>
+            <td class="p-2">{{ formatYearLevel (student.year_level) }}</td>
+            <td class="p-2">{{ formatSemester (student.semester) }}</td>
             <td class="p-2">{{ formatDate(student.created_at) }}</td>
             <td class="p-2">
               <button
@@ -56,6 +64,9 @@
             <th class="p-2 text-left">Email</th>
             <th class="p-2 text-left">Status</th>
             <th class="p-2 text-left">Enrollment Type</th>
+            <th class="p-2 text-left">Courses</th>
+            <th class="p-2 text-left">Year</th>
+            <th class="p-2 text-left">Semester</th>
             <th class="p-2 text-left">Date Enrolled</th>
             <th class="p-2 text-left">Actions</th>
           </tr>
@@ -69,8 +80,13 @@
             <td class="p-2">{{ student.full_name || 'N/A' }}</td>
             <td class="p-2">{{ student.student_id || 'N/A' }}</td>
             <td class="p-2">{{ student.email || 'N/A' }}</td>
-            <td class="p-2">{{ student.status || 'Approved' }}</td>
+            <td class="p-2">
+              {{ student.status && student.status.trim() !== '' ? student.status : 'Approved' }}
+            </td>
             <td class="p-2">{{ student.enrollment_type || 'N/A' }}</td>
+            <td class="p-2">{{ student.course }}</td>
+            <td class="p-2">{{ formatYearLevel (student.year_level) }}</td>
+            <td class="p-2">{{ formatSemester (student.semester) }}</td>
             <td class="p-2">{{ formatDate(student.created_at) }}</td>
             <td class="p-2 text-green-600 font-semibold">Approved</td>
           </tr>
@@ -91,10 +107,23 @@ export default {
   data() {
     return {
       pendingStudents: [],
-      enrolledStudents: []
+      enrolledStudents: [],
+      yearLevelMap: {
+        1: "1st",
+        2: "2nd",
+        3: "3rd",
+        4: "4th",
+      },
+      semesterMap: {
+        1: "1st",
+        2: "2nd"
+      }
     }
   },
   methods: {
+    displayStatus(status, fallback) {
+      return status && status.trim() !== '' ? status : fallback
+    },
     formatDate(date) {
       if (!date) return 'N/A'
       const parsed = new Date(date)
@@ -107,17 +136,20 @@ export default {
       })
     },
 
+    // Format Year Level
+    formatYearLevel(level) {
+      return this.yearLevelMap[level] || level || 'N/A'
+    },
+
+    // Format Semester
+    formatSemester(sem) {
+      return this.semesterMap[sem] || sem || 'N/A'
+    },
+
     async loadPendingStudents() {
       try {
         const res = await fetchPendingStudents()
-        if (res.success && Array.isArray(res.data)) {
-          // Access the correct array
-          this.pendingStudents = res.data
-        } else if (res.success && Array.isArray(res.data?.data)) {
-          this.pendingStudents = res.data.data
-        } else {
-          this.pendingStudents = []
-        }
+        this.pendingStudents = res.success ? res.data : []
       } catch (err) {
         console.error('Failed to fetch pending students:', err)
       }
@@ -126,13 +158,7 @@ export default {
     async loadEnrolledStudents() {
       try {
         const res = await fetchEnrolledStudents()
-        if (res.success && Array.isArray(res.data)) {
-          this.enrolledStudents = res.data
-        } else if (res.success && Array.isArray(res.data?.data)) {
-          this.enrolledStudents = res.data.data
-        } else {
-          this.enrolledStudents = []
-        }
+        this.enrolledStudents = res.success ? res.data : []
       } catch (err) {
         console.error('Failed to fetch enrolled students:', err)
       }

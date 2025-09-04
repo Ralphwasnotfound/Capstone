@@ -13,9 +13,9 @@ export const getStudents = async (req, res) => {
 
 // Create a student
 export const createStudent = async (req, res) => {
-    const { full_name, student_id, email, enrollment_type } = req.body;
+    const { full_name, student_id, email, enrollment_type, course_id, year_level, semester } = req.body;
     const userId = req.user.id || req.user.userId;
-    if (!full_name || !email || !enrollment_type || !userId)
+    if (!full_name || !email || !enrollment_type || !userId || !course_id || !year_level || !semester)
         return res.status(400).json({ error: 'Missing required fields' });
 
     try {
@@ -23,8 +23,8 @@ export const createStudent = async (req, res) => {
         const generatedStudentId = student_id || `STD-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
 
         const [result] = await studentDB.query(
-            'INSERT INTO students (full_name, student_id, email, enrollment_type, user_id) VALUES (?, ?, ?, ?, ?)',
-            [full_name, generatedStudentId, email, enrollment_type, userId]
+            'INSERT INTO students (full_name, student_id, email, enrollment_type, user_id, course_id, year_level, semester, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            [full_name, generatedStudentId, email, enrollment_type, userId, course_id, year_level,semester ,'pending']
         );
 
         res.status(201).json({
@@ -34,7 +34,10 @@ export const createStudent = async (req, res) => {
             email,
             enrollment_type,
             status: 'pending',
-            user_id: userId
+            user_id: userId,
+            course_id,
+            year_level,
+            semester
         });
     } catch (err) {
         console.error(err);
@@ -52,10 +55,14 @@ export const getStudentById = async (req, res) => {
     const student = students[0];
 
     const [subjects] = await studentDB.query(
-      `SELECT s.id, s.name, s.code, s.units
-       FROM subjects s
-       INNER JOIN enrollments e ON s.id = e.subject_id
-       WHERE e.student_id = ?`,
+      `SELECT 
+      s.id, 
+      s.name, 
+      s.code, 
+      s.units
+      FROM subjects s
+      INNER JOIN enrollments e ON s.id = e.subject_id
+      WHERE e.student_id = ?`,
       [student.id]
     );
 
@@ -84,10 +91,15 @@ export const getStudentByMe = async (req, res) => {
 
     // Fetch enrolled subjects for this student
     const [subjects] = await studentDB.query(
-      `SELECT s.id, s.name, s.code, s.units
-       FROM subjects s
-       INNER JOIN enrollments e ON s.id = e.subject_id
-       WHERE e.student_id = ?`,
+      `SELECT 
+      s.id, 
+      s.name, 
+      s.code, 
+      s.units
+      FROM subjects s
+      INNER JOIN enrollments e ON 
+      s.id = e.subject_id
+      WHERE e.student_id = ?`,
       [student.id]
     );
 
@@ -150,7 +162,19 @@ export const enrollStudent = async (req, res) => {
 export const getPendingStudents = async (req, res) => {
   try {
     const [students] = await studentDB.query(
-      'SELECT * FROM students WHERE status = ?',
+      `SELECT 
+        s.id,
+        s.full_name,
+        s.student_id,
+        s.email,
+        s.status,
+        s.enrollment_type,
+        s.year_level,
+        s.semester,
+        c.name AS course
+      FROM students s
+      LEFT JOIN courses c ON s.course_id = c.id
+      WHERE s.status = ?`,
       ['pending']
     );
     res.json({ success: true, data: students });
@@ -164,7 +188,19 @@ export const getPendingStudents = async (req, res) => {
 export const getEnrolledStudents = async (req, res) => {
   try {
     const [students] = await studentDB.query(
-      'SELECT * FROM students WHERE status = ?',
+      `SELECT 
+        s.id,
+        s.full_name,
+        s.student_id,
+        s.email,
+        s.status,
+        s.enrollment_type,
+        s.year_level,
+        s.semester,
+        c.name AS course
+      FROM students s
+      JOIN courses c ON s.course_id = c.id
+      WHERE s.status = ?`,
       ['approved']
     );
     res.json({ success: true, data: students });
