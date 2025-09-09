@@ -18,12 +18,26 @@
         <div class="flex flex-col justify-between">
           <UserTable :users="users" @user-deleted="removeUser"/>
           
+          <div class="py-2">
+            <router-link to="/admin/enrollments">
+              <button
+              class="bg-blue-500 text-white px-3 py-1 rounded"
+              >Enrollments</button>
+            </router-link>
+          </div>
 
-          <router-link to="/admin/enrollments">
-            <button
-            class="bg-blue-500 text-white px-3 py-1 rounded"
-            >Enrollments</button>
-          </router-link>
+          <div>
+            <router-link to="/admin/approval/teachers">
+              <button
+              class="bg-green-500 text-white px-3 py-1 rounded">Teachers</button>
+            </router-link>
+          </div>
+          <div class="py-2">
+            <router-link to="/admin/approval/students">
+              <button
+              class="bg-green-500 text-white px-3 py-1 rounded">Students</button>
+            </router-link>
+          </div>
         </div>
       </div>
     </div>

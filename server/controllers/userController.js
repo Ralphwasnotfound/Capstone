@@ -51,6 +51,14 @@ export const loginUser = async (req, res) => {
             return res.status(401).json({ error: 'Invalid Email or Password'})
         }
 
+        if (user.role === 'teacher') {
+            const [teacherRows] = await userDB.query('SELECT status FROM teachers WHERE user_id = ?', [user.id])
+            const teacher = teacherRows[0]
+            if (!teacher || teacher.status !== 'approved') {
+                return res.status(403).json({ error: 'Your account is not yet Approved.'})
+            }
+        }
+
         const token = jwt.sign(
             { id: user.id, role: user.role},
             process.env.JWT_SECRET,
@@ -68,18 +76,36 @@ export const loginUser = async (req, res) => {
 
 export const getUsers = async (req, res) => {
     try {
-        const [users] = await userDB.query(`SELECT 
-            id, 
-            full_name, 
-            email, 
-            role, 
-            contact,
-            created_at 
-            FROM users WHERE email != 'admin@default.com'`)
-        res.json({users})
+        const [users] = await userDB.query(`
+            SELECT
+                u.id,
+                u.full_name,
+                u.email,
+                u.role,
+                u.contact,
+                u.created_at,
+
+                -- Teacher Details
+                t.specialization,
+                t.credentials,
+                t.status AS teacher_status,
+
+                -- Student details
+                s.student_number,
+                s.status AS student_status
+
+            FROM users u
+            LEFT JOIN teachers t ON u.id = t.user_id
+            LEFT JOIN students s ON u.id = s.user_id
+            WHERE u.email != 'admin@default.com'
+
+                AND (u.role != 'teacher' OR t.status = 'approved')
+            `)
+
+            res.json({ users})
     } catch (err) {
         console.error('Fetch users error:', err)
-        res.status(500).json({ error: 'Server error while fetching users' })
+        res.status(500).json({err:'Server error while fetching users'})
     }
 }
 

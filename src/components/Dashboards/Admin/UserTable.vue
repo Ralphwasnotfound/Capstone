@@ -124,8 +124,9 @@ export default {
                 }
 
                 // SEPARATE ROLES
-                this.students = allusers.filter(user => user.role === 'student')
-                this.teachers = allusers.filter(user => user.role === 'teacher')
+                this.students = allusers.filter(u => u.role === 'student' && u.student_status === 'approved')
+                this.teachers = allusers.filter(u => u.role === 'teacher' && u.teacher_status === 'approved')
+
 
                 console.log("STUDENTS:", this.students)
                 console.log("TEACHERS:", this.teachers)

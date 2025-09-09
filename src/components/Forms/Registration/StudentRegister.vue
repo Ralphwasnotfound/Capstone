@@ -65,7 +65,7 @@
 </template>
 
 <script>
-import { registration, registerUser } from '@/composables/registration';
+import { registration, registerStudent } from '@/composables/registration';
 
 export default {
     name: 'StudentRegister',
@@ -82,30 +82,41 @@ export default {
     },
     methods: {
         async handleSubmit() {
-            const isValid = registration(this.form)
-            if (!isValid) return
+    const isValid = registration(this.form)
+    if (!isValid) return
 
-            const payload = {
-                full_name: this.form.fullName,
-                email: this.form.email,
-                password: this.form.password,
-                role: 'student',
-                contact: this.form.contact
-            }
+    const payload = {
+        full_name: this.form.fullName,
+        email: this.form.email,
+        password: this.form.password,
+        role: 'student',
+        contact: this.form.contact,
 
-            const { success, error } = await registerUser(payload)
+        // Default values for required student fields
+        student_number: 'S' + Math.floor(Math.random() * 100000), // example: S12345
+        street: null,
+        barangay: null,
+        city: null,
+        province: null,
+        zipcode: null,
+        guardian_name: null,
+        guardian_contact: null
+    }
 
-            if(success) {
-                alert('Registration Successfull!')
-                this.form.fullName = ''
-                this.form.email = ''
-                this.form.password = ''
-                this.form.confirmPassword = ''
-                this.form.contact = ''
-            } else {
-                alert(`Registration Failed: ${error}`)
-            }
-        }
+    const { success, error } = await registerStudent(payload)
+
+    if(success) {
+        alert('Registration Successful!')
+        this.form.fullName = ''
+        this.form.email = ''
+        this.form.password = ''
+        this.form.confirmPassword = ''
+        this.form.contact = ''
+    } else {
+        alert(`Registration Failed: ${error}`)
+    }
+}
+
     }
 }
 </script>

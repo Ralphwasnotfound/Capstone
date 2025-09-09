@@ -57,6 +57,9 @@ export default{
         // STUDENT ENROLLMENT PAGE
         '/student-enrollment',
         '/admin/enrollments',
+        // APPROVAL PAGE
+        '/admin/approval/teachers',
+        '/admin/approval/students'
       ]
       return hiddenRoutes.includes(this.$route.path) || 
       /^\/student\/\d+\/subjects$/.test(this.$route.path)

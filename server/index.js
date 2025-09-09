@@ -12,6 +12,10 @@ import studentRoutes from './routes/student.js'
 import userRoutes from './routes/users.js'
 import gradesRoutes from './routes/grades.js';
 import subjectsRoutes from './routes/subjects.js';
+import registerTeacherRoutes from './routes/registration/registration_teachers.js'
+import registerStudentRoutes from './routes/registration/registration_students.js'
+import teacherRoutes from './routes/approval/teachersApproval.js'
+import studentApprovalRoutes from './routes/approval/studentsApproval.js'
 
 // Middleware
 const app = express()
@@ -33,6 +37,10 @@ app.use('/students', verifyToken, studentRoutes)
 app.use('/users', userRoutes)
 app.use('/grades', gradesRoutes)
 app.use('/subjects', subjectsRoutes)
+app.use('/teachers/approval', teacherRoutes)        // for admin approval
+app.use('/students/approval', studentApprovalRoutes)        // for admin approval
+app.use('/auth/teachers', registerTeacherRoutes) // for teacher signup
+app.use('/auth/students', registerStudentRoutes) // for teacher signup
 
 // Root
 app.get('/', (req, res) => {

@@ -10,13 +10,24 @@ export function registration(form) {
     return true
 }
 
-export async function registerUser(payload){
+// REGISTER
+export async function registerTeacher(payload){
     try {
-        const response = await api.post('/users/register', payload)
+        const response = await api.post('/auth/teachers', payload)
         return { success: true, data: response.data}
     } catch (err) {
-        console.error('Registration error:', err)
-        return { success: false, error: err.response?.data?.error || 'Registration failed'}
+        console.error('Teacher Registration error:', err)
+        return { success: false, error: err.response?.data?.error || 'Teacher registration failed'}
+    }
+}
+
+export async function registerStudent(payload) {
+    try {
+        const response = await api.post('/auth/students', payload)
+        return { success:true, data: response.data}
+    } catch (err) {
+        console.error('Student Registration Error:', err)
+        return { success: false, error: err.response?.data?.error || 'Student Registration Failed'}
     }
 }
 

@@ -72,7 +72,7 @@ export async function approveStudentById(id) {
 
 export async function fetchPendingStudents() {
     try {
-        const res = await api.get('/students/pending')
+        const res = await api.get('/students/approval/pending')
         return { success: res.data.success, data: res.data.data}
     } catch (err) {
         return { success: false, error: err}
