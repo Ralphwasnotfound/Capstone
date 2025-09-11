@@ -36,3 +36,18 @@ export const rejectTeacher = async (req, res) => {
     res.status(500).json({ error: "Server error rejecting teacher" })
   }
 }
+
+export const getApprovedTeachers = async (req, res) => {
+  try {
+    const [teachers] = await userDB.query(`
+      SELECT t.id, u.full_name, u.email, t.specialization, t.contact
+      FROM teachers t
+      JOIN users u ON t.user_id = u.id
+      WHERE u.role = 'teacher' AND t.status = 'approved'
+      `)
+    res.json ({ success:true, data: teachers})
+  } catch (err) {
+    console.error("Error fetching approved teachers:", err.message)
+    res.status(500).json({ error: 'Server error fetching approved teachers'})
+  }
+}

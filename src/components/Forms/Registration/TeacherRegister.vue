@@ -58,12 +58,12 @@
             </div>
 
             <div>
-                <label class="block mb-1 font-medium">Credentials</label>
-                <textarea
-                    v-model="form.credentials"
-                    class="w-full border p-2 rounded"
-                    placeholder="e.g. Master's Degree, 5 years teaching experience"
-                ></textarea>
+                <label class="block mb-1 font-medium">Upload Credentails</label>
+                <input 
+                type="file"
+                @change="handleFileUpload($event, 'credential')" 
+                class="w-full border p-2 rounded">
+                required
             </div>
 
             <div>
@@ -77,12 +77,22 @@
                 >
             </div>
 
+            <div>
+                <label class="block mb-1 font-medium">Upload Valid ID</label>
+                <input 
+                    type="file"
+                    @change="handleFileUpload($event, 'id')" 
+                    class="w-full border p-2 rouned"
+                    required>
+            </div>
+
             <div class="flex justify-center">
                 <button
                     type="submit"
+                    :disabled="loading"
                     class="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700 transition"
                 >
-                    Register
+                    {{ loading ? "Registering..." : "Register" }}
                 </button>
             </div>
         </form>
@@ -90,7 +100,7 @@
 </template>
 
 <script>
-import { registration, registerTeacher } from '@/composables/registration'
+import { registerTeacher } from '@/composables/registration'
 
 export default {
     data() {
@@ -102,31 +112,33 @@ export default {
                 confirmPassword: '',
                 contact: '',
                 specialization: '',
-                credentials: ''
-            }
+                credential: null,
+                id: null
+            },
+            loading: false
         }
     },
     methods: {
+        handleFileUpload(event, field) {
+            this.form[field] = event.target.files[0]
+        },
         async handleSubmit() {
-            const isValid = registration(this.form)
-            if (!isValid) return
-
-            // Split payloads: user fields vs teacher fields
-            const payload = {
-                user: {
-                    full_name: this.form.fullName,
-                    email: this.form.email,
-                    password: this.form.password,
-                    role: 'teacher'
-                },
-                teacher: {
-                    contact: this.form.contact,
-                    specialization: this.form.specialization,
-                    credentials: this.form.credentials
-                }
+            if (this.form.password !== this.form.confirmPassword) {
+                alert("Passwords do not match!")
+                return
             }
+            this.loading = true
+            const formData = new FormData()
 
-            const { success, error } = await registerTeacher(payload)
+            formData.append("full_name", this.form.fullName)
+            formData.append("email", this.form.email)
+            formData.append("password", this.form.password)
+            formData.append("contact", this.form.contact)
+            formData.append("specialization", this.form.specialization)
+            formData.append("credential", this.form.credential)
+            formData.append("id", this.form.id)
+
+            const { success, error} = await registerTeacher(formData, true)
 
             if (success) {
                 alert('Registration Successful!')
@@ -137,11 +149,14 @@ export default {
                     confirmPassword: '',
                     contact: '',
                     specialization: '',
-                    credentials: ''
+                    credential: null,
+                    id: null
                 }
             } else {
-                alert(`Registration Failed: ${error}`)
+                alert(`Registration Failed:${error}`)
             }
+
+            this.loading = false
         }
     }
 }

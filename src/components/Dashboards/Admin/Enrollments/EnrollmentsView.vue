@@ -22,9 +22,9 @@ import StudentEnrollmentTable from '../StudentEnrollmentTable.vue';
         },
         methods: {
             gotoSubjectSection() {
-                // For now just navigate or console.log
-                console.log("Navigatiing to Subject SEction...")
-                this.$router.push("/subjects")
+                const devStudentId = 1
+                console.log("Navigatiing to Subject Section...")
+                this.$router.push({ name: "SubjectSelection", params: { id: devStudentId}})
             }
         }
     }

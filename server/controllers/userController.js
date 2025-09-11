@@ -87,7 +87,7 @@ export const getUsers = async (req, res) => {
 
                 -- Teacher Details
                 t.specialization,
-                t.credentials,
+                t.credential_url,
                 t.status AS teacher_status,
 
                 -- Student details

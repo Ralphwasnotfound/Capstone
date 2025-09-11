@@ -29,7 +29,18 @@
               <td class="border px-4 py-2">{{ subject.code }}</td>
               <td class="border px-4 py-2">{{ subject.name }}</td>
               <td class="border px-4 py-2">{{ subject.units }}</td>
-              <td class="border px-4 py-2">{{ subject.teacher }}</td>
+              <td class="border px-4 py-2">
+                <select 
+                v-if="!subject.enrolled"
+                v-model=subject.selectedTeacherId
+                class="border rounded px-2 py-1">
+                  <option disabled value="">Select Teacher</option>
+                  <option v-for="teacher in teachers" :key="teacher.id" :value="teacher.id">
+                    {{ teacher.full_name }}
+                  </option>
+                </select>
+                <span v-else>{{ subject.teacher_name || "Assigned" }}</span>
+              </td>
               <td class="border px-4 py-2 text-center">
                 <button
                   v-if="!subject.enrolled"
@@ -73,6 +84,7 @@ export default {
       subjects: [],
       selectedSubjects: [],
       student: null,
+      teachers: []
     };
   },
   computed: {
@@ -92,6 +104,7 @@ export default {
   },
   async mounted() {
     await this.fetchStudentAndSubjects();
+    await this.fetchTeachers()
   },
   methods: {
     async fetchStudentAndSubjects() {
@@ -127,6 +140,16 @@ export default {
         console.error("Error fetching student or subjects:", err);
       }
     },
+    async fetchTeachers() {
+      try {
+        const res = await axios.get("http://localhost:3000/teachers/approval/approved", {
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
+        })
+        this.teachers = res.data.data || []
+      } catch (err) {
+        console.error("error fetching teachers:", err)
+      }
+    },
 
     addToSelection(subject) {
       if (!this.selectedSubjects.some((s) => s.id === subject.id)) {
@@ -137,12 +160,16 @@ export default {
     async confirmEnrollment() {
       if (!this.selectedSubjects.length) return alert("No subjects selected!");
       const studentId = this.$route.params.id;
-      const subjectIds = this.selectedSubjects.map((s) => s.id);
+
+      const enrollmentData = this.selectedSubjects.map((s) => ({
+        subjectId: s.id,
+        teacherId: s.selectedTeacherId || null
+      }));
 
       try {
         await axios.put(
           `http://localhost:3000/students/${studentId}/approve`,
-          { subjectIds },
+          { subjects: enrollmentData },
           { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
         );
         alert("Enrolled Successfully!");
