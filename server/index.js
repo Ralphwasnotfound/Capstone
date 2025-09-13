@@ -16,6 +16,8 @@ import registerTeacherRoutes from './routes/registration/registration_teachers.j
 import registerStudentRoutes from './routes/registration/registration_students.js'
 import teacherRoutes from './routes/approval/teachersApproval.js'
 import studentApprovalRoutes from './routes/approval/studentsApproval.js'
+import dropboxAuthRouter from './routes/dropbox/dropboxAuth.js'
+import teacherUploadsRouter from './routes/dropbox/teacherUploads.js'
 
 // Middleware
 const app = express()
@@ -42,6 +44,8 @@ app.use('/students/approval', studentApprovalRoutes)        // for admin approva
 app.use('/auth/teachers', registerTeacherRoutes) // for teacher signup
 app.use('/auth/students', registerStudentRoutes) // for teacher signup
 
+app.use("/", dropboxAuthRouter)
+app.use('/dropbox', teacherUploadsRouter)
 // Root
 app.get('/', (req, res) => {
     res.send('System API is Running')

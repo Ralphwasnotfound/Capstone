@@ -13,7 +13,10 @@ export function registration(form) {
 // REGISTER
 export async function registerTeacher(payload){
     try {
-        const response = await api.post('/auth/teachers', payload)
+        const response = await api.post('/auth/teachers', payload, {
+            headers: { 'Content-Type' : 'multipart/form-data' },
+            skipAuth: true
+        })
         return { success: true, data: response.data}
     } catch (err) {
         console.error('Teacher Registration error:', err)

@@ -3,7 +3,15 @@ import { userDB } from '../../db.js'
 export const getPendingTeachers = async (req, res) => {
   try {
     const [teachers] = await userDB.query(`
-      SELECT t.id, u.full_name, u.email, t.specialization, t.contact, t.status
+      SELECT 
+      t.id, 
+      u.full_name, 
+      u.email, 
+      t.specialization, 
+      t.contact, 
+      t.status,
+      t.credential_url,
+      t.id_url
       FROM teachers t
       JOIN users u ON t.user_id = u.id
       WHERE t.status = 'pending'
@@ -18,7 +26,7 @@ export const getPendingTeachers = async (req, res) => {
 export const approveTeacher = async (req, res) => {
   const { id } = req.params
   try {
-    await userDB.query("UPDATE teachers SET status = 'approved' WHERE id = ?", [id])
+    await userDB.query("UPDATE teachers SET status = 'approved' WHERE id = ? AND status = 'pending'", [id])
     res.json({ message: "Teacher approved successfully" })
   } catch (err) {
     console.error("Error approving teacher:", err.message)

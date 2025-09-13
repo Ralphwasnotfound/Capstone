@@ -9,6 +9,8 @@
                     <th class="px-4 py-2 border">Email</th>
                     <th class="px-4 py-2 border">Specialization</th>
                     <th class="px-4 py-2 border">Contact</th>
+                    <th class="px-4 py-2 border">Credential</th>
+                    <th class="px-4 py-2 border">ID</th>
                     <th class="px-4 py-2 border text-center">Actions</th>
                 </tr>
             </thead>
@@ -19,6 +21,15 @@
                     <td class="px-4 py-2 border">{{ teacher.email }}</td>
                     <td class="px-4 py-2 border">{{ teacher.specialization || 'N/A' }}</td>
                     <td class="px-4 py-2 border">{{ teacher.contact }}</td>
+                    <td class="px-4 py-2 border">
+                        <a v-if="teacher.credential_url" :href="teacher.credential_url" target="_blank">View</a>
+                        <span v-else>N/A</span>
+                    </td>
+                    <td class="px-4 py-2 border">
+                        <a v-if="teacher.id_url" :href="teacher.id_url" target="_blank">View</a>
+                        <span v-else>N/A</span>
+                    </td>
+
                     <td class="px-4 py-2 border text-center">
                         <button 
                         @click="approveTeacher(teacher.id)"
