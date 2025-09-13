@@ -48,7 +48,7 @@
         methods: {
             async fetchStudents() {
                 try {
-                    const res = await fetch("http://localhost:3000/students/approval/pending", {
+                    const res = await fetch("http://localhost:3000/students/approval/registration/pending", {
                         headers: {
                             'Authorization': 'Bearer ' + localStorage.getItem('token')
                         }

@@ -1,12 +1,12 @@
 import { userDB } from '../../db.js'
 
-export const getPendingStudents = async (req, res) => {
+export const getPendingStudentsRegistration = async (req, res) => {
     try {
         const [students] = await userDB.query(`
             SELECT s.id, u.full_name, u.email, s.contact, s.status
                 FROM students s
                 JOIN users u ON s.user_id = u.id
-                WHERE s.status = 'pending'
+                WHERE s.status = 'registration_pending'
             `)
         res.json({ success: true, data: students})
     } catch (err) {
@@ -18,7 +18,7 @@ export const getPendingStudents = async (req, res) => {
 export const approveStudent = async (req, res) => {
     const { id } = req.params
         try {
-            await userDB.query("UPDATE students SET status = 'approved' WHERE id = ?", [id])
+            await userDB.query("UPDATE students SET status = 'registration_approved' WHERE id = ?", [id])
             res.json({ message: "Student approved successfully" })
     } catch (err) {
         console.error("Error approving student:", err.message)
@@ -29,7 +29,7 @@ export const approveStudent = async (req, res) => {
 export const rejectStudent = async (req, res) => {
     const { id } = req.params
         try {
-            await userDB.query("UPDATE students SET status = 'rejected' WHERE id = ?", [id])
+            await userDB.query("UPDATE students SET status = 'registration_rejected' WHERE id = ?", [id])
             res.json({ message: "Student rejected successfully" })
         } catch (err) {
         console.error("Error rejecting student:", err.message)

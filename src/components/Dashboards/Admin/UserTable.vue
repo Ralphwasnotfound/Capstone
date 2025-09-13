@@ -124,7 +124,7 @@ export default {
                 }
 
                 // SEPARATE ROLES
-                this.students = allusers.filter(u => u.role === 'student' && u.student_status === 'approved')
+                this.students = allusers.filter(u => u.role === 'student' && u.student_status === 'registration_approved')
                 this.teachers = allusers.filter(u => u.role === 'teacher' && u.teacher_status === 'approved')
             })
             .catch(err => {
