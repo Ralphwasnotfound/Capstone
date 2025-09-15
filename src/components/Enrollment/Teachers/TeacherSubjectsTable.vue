@@ -26,7 +26,7 @@
               <ul class="list-disc pl-5">
                 <li v-for="student in subject.students" :key="student.id">
                   {{ student.full_name }}
-                </li>
+                </li>a
               </ul>
             </td>
           </tr>

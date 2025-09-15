@@ -1,10 +1,10 @@
-import { studentDB } from "../../db.js"; // enrollment_system DB
+import { studentDB } from "../../db.js"
 
 export const getTeacherSubjects = async (req, res) => {
-  const teacherId = req.params.id;
+  const teacherId = req.params.id
 
-  if (!teacherId) {
-    return res.status(400).json({ error: "Teacher ID is required" });
+  if(!teacherId) {
+    return res.status(400).json({ error: "Teacher ID is required"})
   }
 
   try {
@@ -16,21 +16,25 @@ export const getTeacherSubjects = async (req, res) => {
         s.name AS subject_name,
         s.units,
         s.year_level,
+        s.semester,
         st.id AS student_id,
         st.full_name AS student_name,
-        e.status AS enrollment_status
+        st.student_id AS student_no,
+        st.email,
+        e.status AS enrollment_status,
+        e.semester_id,
+        e.academic_year_id
       FROM teacher_subjects ts
       JOIN subjects s ON ts.subject_id = s.id
-      LEFT JOIN enrollments e 
-        ON ts.subject_id = e.subject_id
-      LEFT JOIN students st 
-        ON e.student_id = st.id AND st.status = 'approved'
+      LEFT JOIN enrollments e
+        ON ts.subject_id = e.subject_id AND ts.teacher_id = e.teacher_id
+      LEFT JOIN students st
+        ON e.student_id = st.id
       WHERE ts.teacher_id = ?`,
       [teacherId]
-    );
+    )
 
-    // Group students under each subject
-    const subjectsMap = {};
+    const subjectsMap = {}
     rows.forEach(row => {
       if (!subjectsMap[row.subject_id]) {
         subjectsMap[row.subject_id] = {
@@ -39,21 +43,41 @@ export const getTeacherSubjects = async (req, res) => {
           name: row.subject_name,
           units: row.units,
           year_level: row.year_level,
-          students: []
-        };
+          semester: row.semester,
+          students:[]
+        }
       }
       if (row.student_id) {
         subjectsMap[row.subject_id].students.push({
           id: row.student_id,
           full_name: row.student_name,
-          enrollment_status: row.enrollment_status
-        });
+          student_no: row.student_no,
+          email: row.email,
+          enrollment_status: row.enrollment_status,
+          semester_id: row.semester_id,
+          academic_year_id: row.academic_year_id
+        })
       }
-    });
+    })
 
-    res.json({ success: true, data: Object.values(subjectsMap) });
+    res.json({ success: true, data: Object.values(subjectsMap)})
   } catch (err) {
-    console.error("Error fetching teacher subjects:", err.sqlMessage || err.message, err);
-    res.status(500).json({ success: false, error: "Failed to fetch teacher subjects" });
+    console.error("Error fetching teacher subject:", err.sqlMessage || err.message)
+    res.status(500).json({ success: false, error: "Failed to fetch teacher subjects" })
   }
-};
+}
+
+// ENROLLMENT_SYSTEM
+export const getApprovedTeachers = async (req, res) => {
+  try {
+    const [teachers] = await studentDB.query(
+      `SELECT id, full_name, email, specialization
+      FROM teachers
+      WHERE status = 'approved'`
+    )
+    res.json({ success:true, data: teachers })
+  } catch (err) {
+    console.error(err) 
+    res.status(500).json({ success: false, message: 'Database error' })
+  }
+}

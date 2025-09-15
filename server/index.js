@@ -18,6 +18,8 @@ import teacherRoutes from './routes/approval/teachersApproval.js'
 import studentApprovalRoutes from './routes/approval/studentsApproval.js'
 import dropboxAuthRouter from './routes/dropbox/dropboxAuth.js'
 import teacherUploadsRouter from './routes/dropbox/teacherUploads.js'
+import teacherDashboardRoutes from './routes/teachers/teacherDashboard.js'
+
 
 // Middleware
 const app = express()
@@ -43,6 +45,8 @@ app.use('/teachers/approval', teacherRoutes)        // for admin approval
 app.use('/students/approval', studentApprovalRoutes)        // for admin approval
 app.use('/auth/teachers', registerTeacherRoutes) // for teacher signup
 app.use('/auth/students', registerStudentRoutes) // for teacher signup
+app.use('/teachers', teacherDashboardRoutes)
+
 
 app.use("/", dropboxAuthRouter)
 app.use('/dropbox', teacherUploadsRouter)

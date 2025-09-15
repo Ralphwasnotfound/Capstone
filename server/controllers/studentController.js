@@ -113,34 +113,49 @@ export const getStudentByMe = async (req, res) => {
 
 // Approve student and optionally enroll in subjects
 // Approve student and optionally enroll in subjects
+// Expect data like: [{ subjectId: 1, teacherId: 2 }, { subjectId: 3, teacherId: 5 }]
 export const approveStudent = async (req, res) => {
     const { id } = req.params;
-    const { subjectIds } = req.body;
+    const { subjects } = req.body; // array of objects
 
     try {
         // Update student status
-        await studentDB.query(
-            'UPDATE students SET status = ? WHERE id = ?',
-            ['approved', id]
-        );
+        await studentDB.query('UPDATE students SET status = ? WHERE id = ?', ['approved', id]);
 
-        // Only enroll if subjectIds is provided and is an array
-        if (Array.isArray(subjectIds) && subjectIds.length > 0) {
-            const enrollPromises = subjectIds.map(subId =>
+        if (Array.isArray(subjects) && subjects.length > 0) {
+            const enrollPromises = subjects.map(s =>
                 studentDB.query(
-                    'INSERT IGNORE INTO enrollments (student_id, subject_id) VALUES (?, ?)', 
-                    [id, subId]
+                    `INSERT INTO enrollments (student_id, subject_id, teacher_id, status) 
+                    VALUES (?, ?, ?, 'enrolled')
+                    ON DUPLICATE KEY UPDATE teacher_id = VALUES(teacher_id), status = 'enrolled'`,
+                    [id, s.subjectId, s.teacherId]
                 )
             );
-            await Promise.all(enrollPromises);
+
+            const assignTeacherPromises = subjects.map(s =>
+                studentDB.query(
+                    'UPDATE subjects SET teacher_id = ? WHERE id = ?',
+                    [s.teacherId, s.subjectId]
+                )
+            );
+
+            const teacherSubjectPromises = subjects.map(s => 
+              studentDB.query(
+                `INSERT IGNORE INTO teacher_subjects (teacher_id, subject_id) VALUES(?, ?)`,
+                [s.teacherId, s.subjectId]
+              )
+            )
+
+            await Promise.all([...enrollPromises, ...assignTeacherPromises, ...teacherSubjectPromises]);
         }
 
-        res.json({ success: true, message: 'Student approved and enrolled' });
+        res.json({ success: true, message: 'Student approved and enrolled with teachers' });
     } catch (err) {
         console.error(err);
         res.status(500).json({ success: false, message: err.message });
     }
 };
+
 
 
 // Enroll a single subject

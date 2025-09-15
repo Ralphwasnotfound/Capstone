@@ -35,13 +35,13 @@ export const getSubjects = async (req, res) => {
 
 // Add a subject
 export const createSubject = async (req, res) => {
-    const { name, code, units, course_id, year_level, teacher_id, semester } = req.body;
-    if (!name || !code || !course_id || !year_level || !teacher_id || !semester) 
+    const { name, code, units, course_id, year_level, semester } = req.body;
+    if (!name || !code || !course_id || !year_level || !semester) 
         return res.status(400).json({ message: 'Missing Required Fields' });
 
     try {
-        const [result] = await studentDB.query('INSERT INTO subjects (name, code, units, course_id, year_level, teacher_id, semester) VALUES (?, ?, ?, ?, ?, ?, ?)', 
-            [name, code, units || 3, course_id, year_level,teacher_id, semester]);
+        const [result] = await studentDB.query('INSERT INTO subjects (name, code, units, course_id, year_level, semester) VALUES ( ?, ?, ?, ?, ?, ?)', 
+            [name, code, units || 3, course_id, year_level, semester]);
         res.json({ 
             id: 
             result.insertId, 
@@ -50,7 +50,6 @@ export const createSubject = async (req, res) => {
             units: units || 3,
             course_id,
             year_level,
-            teacher_id: teacher_id || null,
             semester
         });
         
@@ -59,6 +58,31 @@ export const createSubject = async (req, res) => {
         res.status(500).json({ message: 'Database error' });
     }
 };
+
+export const assignTeacherToSubject = async (req, res) => {
+    const { teacher_id, subject_id } = req.body
+    if (!teacher_id || !subject_id)
+        return res.status(400).json({ message: 'Missing Required Fields' })
+
+    try {
+        await studentDB.query(
+            `INSERT INTO teacher_subjects (teacher_id, subject_id)
+            VALUES (?, ?)
+            ON DUPLICATE KEY UPDATE teacher_id = VALUES(teacher_id)`,
+            [teacher_id, subject_id]
+        )
+
+        await studentDB.query(
+            `UPDATE subjects SET teacher_id = ? WHERE id = ?`,
+            [teacher_id, subject_id]
+        )
+
+        res.json({ success:true, message: 'Teacher assigned to subject' })
+    } catch (err) {
+        console.error(err)
+        res.status(500).json({ message: 'DataBase error' })
+    }
+}
 
 export const getSubjectsByCourse = async (req, res) => {
     const { courseId } =  req.params

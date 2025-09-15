@@ -142,7 +142,7 @@ export default {
     },
     async fetchTeachers() {
       try {
-        const res = await axios.get("http://localhost:3000/teachers/approval/approved", {
+        const res = await axios.get("http://localhost:3000/teachers/enrollment/approved", {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
         })
         this.teachers = res.data.data || []
@@ -158,18 +158,20 @@ export default {
     },
 
     async confirmEnrollment() {
-      if (!this.selectedSubjects.length) return alert("No subjects selected!");
+      if (!this.selectedSubjects.length) 
+      return alert("No subjects selected!");
+    
       const studentId = this.$route.params.id;
 
-      const enrollmentData = this.selectedSubjects.map((s) => ({
+      const subjects = this.selectedSubjects.map(s => ({
         subjectId: s.id,
-        teacherId: s.selectedTeacherId || null
-      }));
+        teacherId: s.selectedTeacherId
+      }))
 
       try {
         await axios.put(
           `http://localhost:3000/students/${studentId}/approve`,
-          { subjects: enrollmentData },
+          { subjects },
           { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
         );
         alert("Enrolled Successfully!");

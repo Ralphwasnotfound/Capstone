@@ -1,5 +1,6 @@
 import bcrypt from "bcrypt"
 import { userDB } from "../../db.js"
+import { studentDB } from "../../db.js";
 import { uploadToDropBox } from "../../utils/dropbox.js";
 import fs from "fs"
 
@@ -60,7 +61,15 @@ export const registerTeacher = async (req, res) => {
             [userId, full_name, email, specialization || null, credentialUrl, idUrl, contact, "pending"]
         );
 
-        res.status(201).json({ message: "Teacher registered successfully, pending approval", userId });
+        // 5. Insert into studentDB (enrollment_system) teachers table
+        await studentDB.query(
+            `INSERT INTO teachers
+            (full_name, email, specialization, contact, credential_url, id_url, status)
+            VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            [full_name, email, specialization || null, contact, credentialUrl, idUrl , "approved"]
+        )
+
+        res.status(201).json({ message: "Teacher registered successfully, pending approval in users DB, added to enrollment system", userId });
     } catch (err) {
         console.error("Teacher registration error:", err);
 
@@ -71,4 +80,6 @@ export const registerTeacher = async (req, res) => {
         res.status(500).json({ error: "Server error during teacher registration" });
     }
 };
+
+
 

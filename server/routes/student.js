@@ -11,13 +11,21 @@ import { getStudents,
 
 const router = express.Router();
 
+// Collection routes
 router.get('/', verifyToken, getStudents);
 router.post('/', verifyToken, createStudent);
-router.put('/:id/approve', verifyToken, approveStudent);
-router.post('/:id/enroll', verifyToken, enrollStudent);
+
+// Status-based routes
 router.get('/pending', verifyToken, getPendingStudents);
 router.get('/enrolled', verifyToken, getEnrolledStudents);
+
+// Authenticated user’s student record
 router.get('/me', verifyToken, getStudentByMe);
+
+// Actions on specific student
+router.put('/:id/approve', verifyToken, approveStudent);
+router.post('/:id/enroll', verifyToken, enrollStudent);
 router.get('/:id', verifyToken, getStudentById);
+
 
 export default router;

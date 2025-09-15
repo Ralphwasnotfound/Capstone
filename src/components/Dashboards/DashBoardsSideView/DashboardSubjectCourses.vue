@@ -6,7 +6,7 @@
 
     <!-- TEACHER -->
     <div v-else-if="role === 'teacher'">
-        <h1>This is the teacher subject-courses</h1>
+        <TeacherSubjectsTable/>
     </div>
 
     <!-- STUDENT -->
@@ -22,11 +22,12 @@
 </template>
 
 <script>
+import TeacherSubjectsTable from '@/components/Enrollment/Teachers/TeacherSubjectsTable.vue';
 import SubjectsCourses from '../Subject&Courses/SubjectsCourses.vue';
 import axios from 'axios';
 
 export default {
-    components: { SubjectsCourses },
+    components: { SubjectsCourses,TeacherSubjectsTable },
     props: {
         role: { type: String, required: true }
     },
