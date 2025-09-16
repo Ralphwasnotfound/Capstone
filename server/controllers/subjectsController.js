@@ -85,27 +85,34 @@ export const assignTeacherToSubject = async (req, res) => {
 }
 
 export const getSubjectsByCourse = async (req, res) => {
-    const { courseId } =  req.params
-    try {
-        const [subjects] = await studentDB.query(
-            `SELECT 
-            s.id,
-            s.name,
-            s.code,
-            s.units,
-            s.course_id,
-            s.year_level,
-            s.semester,
-            t.full_name AS teacher
-            FROM subjects s
-            LEFT JOIN teacher_subjects ts ON ts.subject_id = s.id
-            LEFT JOIN teachers t ON t.id = ts.teacher_id
-            WHERE s.course_id = ?`,
-            [courseId]
-        )
-        res.json({ success: true, data: subjects})
-    } catch (err) {
-        console.error(err)
-        res.status(500).json({ success: false, message: err.message})
-    }
-}
+  const { courseId } = req.params;
+  const studentId = req.query.studentId; // pass student ID from frontend
+
+  try {
+    const [subjects] = await studentDB.query(
+      `SELECT 
+          s.id,
+          s.name,
+          s.code,
+          s.units,
+          s.course_id,
+          s.year_level,
+          t.full_name AS teacher_name,
+          t.id AS teacher_id,
+          e.status AS enrollment_status,
+          e.teacher_id AS enrolled_teacher_id
+      FROM subjects s
+      LEFT JOIN teacher_subjects ts ON ts.subject_id = s.id
+      LEFT JOIN teachers t ON t.id = ts.teacher_id
+      LEFT JOIN enrollments e ON e.subject_id = s.id AND e.student_id = ?
+      WHERE s.course_id = ?`,
+      [studentId, courseId]
+    );
+
+    res.json({ success: true, data: subjects });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+

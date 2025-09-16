@@ -126,7 +126,7 @@ export default {
 
         // Fetch subjects by course
         const subjectsRes = await axios.get(
-          `http://localhost:3000/subjects/course/${this.student.course_id}`,
+          `http://localhost:3000/subjects/course/${this.student.course_id}?studentId=${this.student.id}`,
           { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
         );
 
@@ -134,7 +134,10 @@ export default {
 
         this.subjects = subjectsRes.data.data.map((sub) => ({
           ...sub,
-          enrolled: enrolledSubjects.some((e) => e.id == sub.id),
+          enrolled: enrolledSubjects.some(
+            (e) => e.id == sub.id && e.status === 'enrolled'
+          ),
+          selectedTeacherId: sub.teacher_id || sub.enrolled_teacher_id || null
         }));
       } catch (err) {
         console.error("Error fetching student or subjects:", err);
@@ -156,32 +159,55 @@ export default {
         this.selectedSubjects.push(subject);
       }
     },
-
     async confirmEnrollment() {
-      if (!this.selectedSubjects.length) 
-      return alert("No subjects selected!");
-    
-      const studentId = this.$route.params.id;
+  if (!this.selectedSubjects.length) {
+    return alert("No subjects selected!");
+  }
 
-      const subjects = this.selectedSubjects.map(s => ({
-        subjectId: s.id,
-        teacherId: s.selectedTeacherId
-      }))
+  const studentId = this.$route.params.id;
 
-      try {
-        await axios.put(
-          `http://localhost:3000/students/${studentId}/approve`,
-          { subjects },
-          { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
-        );
-        alert("Enrolled Successfully!");
-        this.selectedSubjects = [];
-        await this.fetchStudentAndSubjects();
-      } catch (err) {
-        console.error("Enrollment failed:", err);
-        alert("Enrollment Failed!");
-      }
-    },
+  // Make sure each subject has a teacher selected
+  for (const subj of this.selectedSubjects) {
+    if (!subj.selectedTeacherId) {
+      return alert(`Please select a teacher for ${subj.name}`);
+    }
+  }
+
+  // Map selected subjects to the format expected by the backend
+  const subjects = this.selectedSubjects.map(s => ({
+    subjectId: s.id,
+    teacherId: s.selectedTeacherId
+  }));
+
+  try {
+    // ✅ Use the backend endpoint that automatically ensures an active academic year
+    const yearRes = await axios.get(
+      `http://localhost:3000/enrollment/academic-years/active`,
+      { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
+    );
+
+    const activeYear = yearRes.data.success ? yearRes.data.data : null;
+    if (!activeYear) {
+      return alert("Failed to get or create an active academic year.");
+    }
+
+    // Send enrollment request to approve student
+    await axios.put(
+      `http://localhost:3000/students/${studentId}/approve`,
+      { subjects, semester_id: this.selectedSubjects[0].semester_id || 1 }, // make sure you pass a semester
+      { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
+    );
+
+    alert("Enrolled Successfully!");
+    this.selectedSubjects = [];
+    await this.fetchStudentAndSubjects();
+  } catch (err) {
+    console.error("Enrollment failed:", err.response?.data || err);
+    alert("Enrollment Failed!");
+  }
+}
+
+
   },
 };
 </script>

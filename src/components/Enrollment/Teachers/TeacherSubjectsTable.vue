@@ -26,7 +26,7 @@
               <ul class="list-disc pl-5">
                 <li v-for="student in subject.students" :key="student.id">
                   {{ student.full_name }}
-                </li>a
+                </li>
               </ul>
             </td>
           </tr>
@@ -56,7 +56,7 @@ import axios from 'axios'
                         headers: { Authorization: `Bearer ${this.token}` }
                     })
                         
-                    this.subjects = response.data
+                    this.subjects = response.data.data
                 } catch (err) {
                     console.error('Failed to fetch subjects:', err)
                 } 

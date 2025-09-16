@@ -33,7 +33,7 @@
             <td class="p-2">{{ student.enrollment_type || 'N/A' }}</td>
             <td class="p-2">{{ student.course }}</td>
             <td class="p-2">{{ formatYearLevel (student.year_level) }}</td>
-            <td class="p-2">{{ formatSemester (student.semester) }}</td>
+            <td class="p-2">{{ formatSemester (student.semester_id) }}</td>
             <td class="p-2">{{ formatDate(student.created_at) }}</td>
             <td class="p-2">
               <button
@@ -86,7 +86,7 @@
             <td class="p-2">{{ student.enrollment_type || 'N/A' }}</td>
             <td class="p-2">{{ student.course }}</td>
             <td class="p-2">{{ formatYearLevel (student.year_level) }}</td>
-            <td class="p-2">{{ formatSemester (student.semester) }}</td>
+            <td class="p-2">{{ formatSemester (student.semester_id) }}</td>
             <td class="p-2">{{ formatDate(student.created_at) }}</td>
             <td class="p-2 text-green-600 font-semibold">Approved</td>
           </tr>

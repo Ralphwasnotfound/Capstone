@@ -154,5 +154,21 @@ export async function fetchSubjectsByCourse(courseId) {
         return { success: false, error: err}
     }
 }
+// semesters
+export const fetchSemesters = async () => {
+  try {
+    const res = await api.get('/enrollment/semesters'); 
+    const semesters = Array.isArray(res.data.data) ? res.data.data : []
+    console.log('API response:', res.data)
+    if (semesters.length === 0){
+        console.warn('No semesters returned from API')
+    }
+
+    return { success: true, data: semesters };
+  } catch(err) {
+    console.error(err);
+    return { success: false, data: [] };
+  }
+};
 
 export default api

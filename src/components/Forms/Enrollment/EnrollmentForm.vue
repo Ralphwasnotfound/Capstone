@@ -18,17 +18,17 @@
     <div>
       <label for="course" class="block font-medium">Course</label>
       <select v-model="form.course_id" id="course" class="border rounded p-2 w-full" required>
-        <option disabled value="Select Course"></option>
+        <option disabled value="">Select Course</option>
         <option value="1">BSIT</option>
         <option value="2">BSBA</option>
         <option value="3">BSCRIM</option>
       </select>
     </div>
 
-    <!-- Year Lvl Picker -->
+    <!-- Year Level -->
     <div>
       <label for="year" class="block font-medium">Year Level</label>
-      <select v-model="form.year_level" id="year" required>
+      <select v-model="form.year_level" id="year" class="border rounded p-2 w-full" required>
         <option value="1">1st Year</option>
         <option value="2">2nd Year</option>
         <option value="3">3rd Year</option>
@@ -36,27 +36,29 @@
       </select>
     </div>
 
+    <!-- Enrollment Type -->
+    <div>
+      <label for="type" class="block font-medium">Enrollment Type</label>
+      <select v-model="form.enrollment_type" id="type" class="border rounded p-2 w-full" required>
+        <option disabled value="">Select Type</option>
+        <option value="Freshmen">Freshmen</option>
+        <option value="Old">Old Student</option>
+        <option value="Transferee">Transferee</option>
+        <option value="Shifty">Shifty</option>
+      </select>
+    </div>
+
     <!-- Semester Picker -->
     <div>
       <label for="semester" class="block font-medium">Semester</label>
-      <select v-model="form.semester" id="semester" class="border rounded p-2 w-full" required>
+      <select v-model="form.semester_id" id="semester" class="border rounded p-2 w-full" required>
         <option disabled value="">Select Semester</option>
-        <option value="1">1st Semester</option>
-        <option value="2">2nd Semester</option>
+        <option v-for="sem in semesters" :key="sem.id" :value="sem.id">
+          {{ sem.name }} ({{ sem.academic_year }})
+        </option>
       </select>
-
-      <!-- Enrollment Type -->
-      <div>
-        <label for="type" class="block font-medium">Enrollment Type</label>
-        <select v-model="form.enrollment_type" id="type" class="border rounded p-2 w-full" required>
-          <option disabled value="">Select Type</option>
-          <option value="Freshmen">Freshmen</option>
-          <option value="Old">Old Student</option>
-          <option value="Transferee">Transferee</option>
-          <option value="Shifty">Shifty</option>
-        </select>
-      </div>
     </div>
+
 
     <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
       Enroll
@@ -65,53 +67,65 @@
 </template>
 
 <script>
-import { submitEnrollment, fetchStudents } from '@/composables/utils/api';
-  export default {
-    name: 'EnrollmentForm',
-    data() {
-      return {
-        form: {
-          full_name: '',
-          email: '',
-          course_id: '',
-          year_level: '',
-          semester: '',
-          enrollment_type: ''
-        },
-        student: []
-      }
-    },
-    methods: {
-      async handleSubmit() {
-        const { success } = await submitEnrollment(this.form)
+import { submitEnrollment, fetchStudents, fetchSemesters } from '@/composables/utils/api';
+
+export default {
+  name: 'EnrollmentForm',
+  data() {
+    return {
+      form: {
+        full_name: '',
+        email: '',
+        course_id: '',
+        year_level: '',
+        enrollment_type: '',
+        semester_id: ''
+      },
+      students: [],
+      semesters: []
+    }
+  },
+  methods: {
+    async handleSubmit() {
+      try {
+        const { success } = await submitEnrollment(this.form);
 
         if (success) {
-          alert('Enrollment Submitted')
+          alert('Enrollment Submitted');
           this.form = {
             full_name: '',
             email: '',
             course_id: '',
             year_level: '',
-            semester: '',
             enrollment_type: '',
-          }
-          this.loadStudents()
-        } else { 
-          alert('Submission Failed')
+            semester_id: ''
+          };
+          this.loadStudents();
+        } else {
+          alert('Submission Failed');
         }
-      },
-        async loadStudents() {
-          const { success, data } = await fetchStudents()
-          if (success) this.students = data
+      } catch (err) {
+        console.error('Enrollment error', err);
+        alert('Submission Failed');
       }
     },
-    mounted() {
-      this.loadStudents()
-    }
-    
-  }
+    async loadSemesters() {
+      const { success, data } = await fetchSemesters();
+      if (success && Array.isArray(data)) {
+        this.semesters = data;
+      } else {
+        this.semesters = []
+        console.warn('No Semesters Found')
+      } 
+    },
+    async loadStudents() {
+      const { success, data } = await fetchStudents();
+      if (success) this.students = data;
+    },
+  },
+  mounted() {
+    this.loadStudents();
+    this.loadSemesters();
+  },
+}
 </script>
-
-<style>
-
-</style>
