@@ -37,14 +37,17 @@ export default {
         };
     },
     async mounted() {
-        try {
-            const res = await axios.get('http://localhost:3000/students/me', {
-                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-            });
-            this.isEnrolled = ['approved', 'enrolled'].includes(res.data.status);
-        } catch (err) {
-            console.error('Error fetching student data:', err);
-        }
+    try {
+        const res = await axios.get("http://localhost:3000/students/me", {
+            headers: { Authorization: `Bearer ${localStorage.getItem('token')}`
+            }
+        });
+
+        this.isEnrolled = ['enrolled', 'pending'].includes(res.data?.data?.status);
+    } catch (err) {
+        console.error('Error fetching student data:', err);
     }
+}
+
 };
 </script>

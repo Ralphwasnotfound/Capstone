@@ -21,8 +21,8 @@
         <tr v-for="(subject, index) in subjects" 
             :key="subject.id"
             :class="index % 2 === 0 ? 'bg-white hover:bg-gray-100' : 'bg-gray-50 hover:bg-gray-100'">
-          <td class="border border-gray-300 px-4 py-2">{{ subject.name }}</td>
-          <td class="border border-gray-300 px-4 py-2">{{ subject.code }}</td>
+          <td class="border border-gray-300 px-4 py-2">{{ subject.subject_name }}</td>
+          <td class="border border-gray-300 px-4 py-2">{{ subject.subject_code }}</td>
           <td class="border border-gray-300 px-4 py-2">{{ subject.units }}</td>
         </tr>
       </tbody>
@@ -46,11 +46,12 @@ export default {
   methods: {
     async fetchEnrollment() {
       try {
-        const res = await axios.get('/students/me', {
+        const res = await axios.get("/students/me", {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
         });
-        this.status = res.data.status || '';
-        this.subjects = res.data.subjects || [];
+        this.status = res.data.data.status || '';
+            this.subjects = res.data.data.subjects.filter(s => s.enrollment_status === 'enrolled');
+
       } catch (err) {
         console.error('Error fetching enrollment:', err);
       }
@@ -59,11 +60,3 @@ export default {
 };
 </script>
 
-<style scoped>
-.fade-enter-active, .fade-leave-active {
-  transition: opacity 0.2s;
-}
-.fade-enter, .fade-leave-to {
-  opacity: 0;
-}
-</style>
