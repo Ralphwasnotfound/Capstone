@@ -2,61 +2,63 @@ import { studentDB } from "../../db.js"
 
 export const getTeacherSubjects = async (req, res) => {
   const teacherId = req.params.id
-
-  if(!teacherId) {
-    return res.status(400).json({ error: "Teacher ID is required"})
-  }
+  if (!teacherId) return res.status(400).json({ error: "Teacher ID is required" })
 
   try {
-    const [rows] = await studentDB.query(
-      `SELECT 
-  s.id AS subject_id,
-  s.name AS subject_name,
-  s.code AS subject_code,
-  e.semester_id,
-  e.academic_year_id,
-  t.id AS teacher_id,
-  t.full_name AS teacher_name
-FROM enrollments e
-JOIN subjects s ON e.subject_id = s.id
-JOIN teachers t ON e.teacher_id = t.id
-WHERE e.teacher_id = ?;
-`,
+    // Fetch subjects assigned to this teacher via enrollments
+    const [subjects] = await studentDB.query(
+      `SELECT DISTINCT
+         s.id AS subject_id,
+         s.name AS subject_name,
+         s.code AS subject_code,
+         s.units,
+         s.year_level
+       FROM subjects s
+       JOIN enrollments e ON s.id = e.subject_id
+       WHERE e.teacher_id = ?`,
       [teacherId]
     )
 
-    const subjectsMap = {}
-    rows.forEach(row => {
-      if (!subjectsMap[row.subject_id]) {
-        subjectsMap[row.subject_id] = {
-          id: row.subject_id,
-          code: row.subject_code,
-          name: row.subject_name,
-          units: row.units,
-          year_level: row.year_level,
-          semester: row.semester,
-          students:[]
-        }
-      }
-      if (row.student_id) {
-        subjectsMap[row.subject_id].students.push({
-          id: row.student_id,
-          full_name: row.student_name,
-          student_no: row.student_no,
-          email: row.email,
-          enrollment_status: row.enrollment_status,
-          semester_id: row.semester_id,
-          academic_year_id: row.academic_year_id
-        })
-      }
-    })
+    if (!subjects.length) {
+      return res.json({ success: true, data: [] })
+    }
 
-    res.json({ success: true, data: Object.values(subjectsMap)})
+    const subjectIds = subjects.map(s => s.subject_id)
+    let studentsBySubject = {}
+
+    if (subjectIds.length) {
+      const placeholders = subjectIds.map(() => '?').join(',')
+      const [students] = await studentDB.query(
+        `SELECT e.subject_id, st.id AS student_id, st.full_name
+         FROM enrollments e
+         JOIN students st ON e.student_id = st.id
+         WHERE e.subject_id IN (${placeholders}) AND e.status = 'enrolled'`,
+        subjectIds
+      )
+
+      students.forEach(s => {
+        if (!studentsBySubject[s.subject_id]) studentsBySubject[s.subject_id] = []
+        studentsBySubject[s.subject_id].push({ id: s.student_id, full_name: s.full_name })
+      })
+    }
+
+    const subjectsWithStudents = subjects.map(s => ({
+      id: s.subject_id,
+      code: s.subject_code,
+      name: s.subject_name,
+      units: s.units,
+      year_level: s.year_level,
+      students: studentsBySubject[s.subject_id] || []
+    }))
+
+    res.json({ success: true, data: subjectsWithStudents })
   } catch (err) {
-    console.error("Error fetching teacher subject:", err.sqlMessage || err.message)
+    console.error("Error fetching teacher subjects:", err.sqlMessage || err.message)
     res.status(500).json({ success: false, error: "Failed to fetch teacher subjects" })
   }
 }
+
+
 
 // ENROLLMENT_SYSTEM
 export const getApprovedTeachers = async (req, res) => {
