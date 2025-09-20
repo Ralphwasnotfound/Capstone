@@ -1,13 +1,17 @@
+// routes/students.js
 import express from 'express';
 import { verifyToken } from '../middleware/auth.js';
-import { getStudents, 
-    createStudent,
-     approveStudent, 
-     getStudentById, 
-     enrollStudent ,
-     getStudentByMe,
-     getEnrolledStudents, 
-     getPendingStudents } from '../controllers/studentController.js';
+import { 
+  getStudents,
+  createStudent,
+  getEnrolledStudents,
+  getPendingStudents,
+  getStudentById,
+  enrollStudent,
+  approveStudent,
+  getStudentByMe,
+  getEnrolledStudentsBySubject // <-- new
+} from '../controllers/studentController.js';
 
 const router = express.Router();
 
@@ -19,6 +23,9 @@ router.post('/', verifyToken, createStudent);
 router.get('/pending', verifyToken, getPendingStudents);
 router.get('/enrolled', verifyToken, getEnrolledStudents);
 
+// New route: students of a specific subject
+router.get('/subject/:subjectId', verifyToken, getEnrolledStudentsBySubject);
+
 // Authenticated user’s student record
 router.get('/me', verifyToken, getStudentByMe);
 
@@ -26,6 +33,5 @@ router.get('/me', verifyToken, getStudentByMe);
 router.put('/:id/approve', verifyToken, approveStudent);
 router.post('/:id/enroll', verifyToken, enrollStudent);
 router.get('/:id', verifyToken, getStudentById);
-
 
 export default router;

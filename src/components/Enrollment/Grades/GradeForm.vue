@@ -1,89 +1,67 @@
 <template>
-    <div>
-        <div v-if="grade" class="modal bg-white p-4 shadow-lg rounded" >
-            <h3 class="text-lg font-bold mb-2">Edit Grade - {{  grade.subject_name }}</h3>
+  <div class="bg-white p-4 shadow rounded">
+    <h3 class="font-bold mb-2">{{ student.full_name }}</h3>
 
-            <form @submit.prevent="submitGrade">
-                <div class="mb-2">
-                    <label>Grade</label>
-                    <input type="number"
-                    v-model="localGrade"
-                    min="0"
-                    max="100"
-                    step="0.01"
-                    class="border px-2 py-1 rounded">
-                </div>
+    <form @submit.prevent="submitGrade" class="flex gap-2 items-center">
+      <input 
+        type="number" 
+        v-model="localGrade" 
+        placeholder="Grade" 
+        min="0" 
+        max="100" 
+        step="0.01"
+        class="border px-2 py-1 rounded w-24"
+      />
 
-                <div class="mb-2">
-                    <label>Remarks:</label>
-                    <select v-model="localRemarks" class="border px-2 py-1 rounded">
-                        <option value="">Select</option>
-                        <option value="Passed">Passed</option>
-                        <option value="Failed">Failed</option>
-                        <option value="Incomplete">Incomplete</option>
-                    </select>
-                </div>
+      <select v-model="localRemarks" class="border px-2 py-1 rounded">
+        <option value="">Remarks</option>
+        <option value="Passed">Passed</option>
+        <option value="Failed">Failed</option>
+        <option value="Incomplete">Incomplete</option>
+      </select>
 
-                <div class="flex gap-2">
-                    <button type="submit" class="bg-blue-500 text-white px-4 py-1 rounded">Submit</button>
-                    <button type="button" @click="$emit('close')" class="bg-gray-300 px-4 py-1 rounded">Cancel</button>
-                </div>
-            </form>
-        </div>
-    </div>
+      <button type="submit" class="bg-blue-500 text-white px-4 py-1 rounded">Save</button>
+    </form>
+  </div>
 </template>
 
 <script>
-import { updateGrade } from '@/composables/utils/api';
+import axios from 'axios'
 
-    export default {
-        props: {
-            grade: Object
-        },
-        data() {
-            return {
-                localGrade: '',
-                localRemarks: ''
-            }
-        },
-        watch:{
-            grade: {
-                immediate: true,
-                handler(newVal) {
-                    if (newVal) {
-                        this.localGrade = newVal.grade ?? ''
-                        this.localRemarks = newVal.remarks ?? ''
-                    }
-                }
-            }
-        },
-        methods: {
-            async submitGrade() {
-                const payload = {
-                    grade: this.localGrade, remarks: this.localRemarks
-                }
-                const res = await updateGrade(this.grade.id, payload)
-
-                if (res.success) {
-                    this.$emit('saved', {...this.grade, ...payload})
-                }
-            }
-        }
+export default {
+  props: {
+    student: Object,
+    teacherId: Number,
+    subjectId: Number,
+    academicYearId: Number
+  },
+  data() {
+    return {
+      localGrade: this.student.grade ?? '',
+      localRemarks: this.student.remarks ?? ''
     }
-</script>
+  },
+  methods: {
+    async submitGrade() {
+      try {
+        const payload = {
+          student_id: this.student.id,
+          teacher_id: this.teacherId,
+          subject_id: this.subjectId,
+          grade: this.localGrade,
+          remarks: this.localRemarks,
+          academic_year_id: this.academicYearId
+        }
 
-<style scoped>
-.modal {
-  position: fixed;
-  top: 20%;
-  left: 50%;
-  transform: translate(-50%, -20%);
-  width: 300px;
-  background: white;
-  padding: 1rem;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-  border-radius: 0.5rem;
-  z-index: 1000;
+        const res = await axios.post('http://localhost:3000/grades', payload)
+
+        if (res.data.success) {
+          this.$emit('saved', { ...this.student, grade: this.localGrade, remarks: this.localRemarks })
+        }
+      } catch (err) {
+        console.error('Failed to save grade:', err)
+      }
+    }
+  }
 }
-
-</style>
+</script>

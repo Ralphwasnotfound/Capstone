@@ -308,3 +308,26 @@ GROUP BY s.id, s.full_name, s.student_id, s.email, s.status, s.enrollment_type, 
   }
 };
 
+// GET /teachers/:teacherId/subjects/:subjectId/students
+export const getEnrolledStudentsBySubject = async (req, res) => {
+  const { subjectId } = req.params;
+  if (!subjectId) {
+    return res.status(400).json({ success: false, message: "Missing subjectId" });
+  }
+
+  try {
+    const [rows] = await studentDB.query(
+      `SELECT e.id, s.full_name
+       FROM enrollments e
+       JOIN students s ON e.student_id = s.id
+       WHERE e.subject_id = ?`,
+      [subjectId]
+    );
+
+    res.json({ success: true, students: rows });
+  } catch (err) {
+    res.status(500).json({ success: false, message: "Database error", error: err });
+  }
+};
+
+

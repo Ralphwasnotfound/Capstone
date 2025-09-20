@@ -1,63 +1,83 @@
 import { studentDB } from "../db.js";
 
-// Get grades for a specific student
-export const getGradesByStudent = async (req, res) => {
-    const studentId = req.params.studentId;
+export const getTeacherSubjectsWithStudents = async (req, res) => {
+    const teacherId = req.params.teacherId;
+    if (!teacherId) return res.status(400).json({ success: false, error: "Teacher ID required" });
 
     try {
-        const [results] = await studentDB.query(`
-            SELECT e.id AS enrollment_id,
-                   sub.code AS subject_code,
-                   sub.name AS subject_name,
-                   g.grade,
-                   g.remarks
-            FROM enrollments e
-            JOIN subjects sub ON e.subject_id = sub.id
-            LEFT JOIN grades g ON g.enrollment_id = e.id
-            WHERE e.student_id = ?
-        `, [studentId]);
+        const [rows] = await studentDB.query(`
+            SELECT
+                s.id AS subject_id,
+                s.name AS subject_name,
+                s.code AS subject_code,
+                s.units,
+                s.year_level,
+                st.id AS student_id,
+                st.full_name,
+                g.id AS grade_id,
+                g.grade,
+                g.remarks
+            FROM teacher_subjects ts
+            JOIN subjects s ON ts.subject_id = s.id
+            LEFT JOIN enrollments e
+                ON e.subject_id = s.id AND e.teacher_id = ts.teacher_id AND e.status='enrolled'
+            LEFT JOIN students st ON st.id = e.student_id
+            LEFT JOIN grades g
+                ON g.student_id = st.id AND g.subject_id = s.id
+            WHERE ts.teacher_id = ?
+            ORDER BY s.id, st.full_name
+        `, [teacherId]);
 
-        res.json({ success: true, data: results });
+        const subjects = rows.reduce((acc, row) => {
+            let subject = acc.find(sub => sub.id === row.subject_id);
+            if (!subject) {
+                subject = {
+                    id: row.subject_id,
+                    code: row.subject_code,
+                    name: row.subject_name,
+                    units: row.units,
+                    year_level: row.year_level,
+                    students: []
+                };
+                acc.push(subject);
+            }
+            if (row.student_id) {
+                subject.students.push({
+                    id: row.student_id,
+                    full_name: row.full_name,
+                    grade_id: row.grade_id,
+                    grade: row.grade,
+                    remarks: row.remarks
+                });
+            }
+            return acc;
+        }, []);
+
+        res.json({ success: true, data: subjects });
     } catch (err) {
-        console.error("DB Query error:", err);
-        res.status(500).json({ success: false, error: 'Failed to fetch grades' });
+        console.error(err);
+        res.status(500).json({ success: false, error: 'Failed to fetch subjects/students' });
     }
 };
 
-// Teacher adds a grade
-export const createGrade = async (req, res) => {
-    const { enrollment_id, teacher_id, grade, remarks } = req.body;
-
-    if (!enrollment_id || !teacher_id) {
-        return res.status(400).json({ success: false, error: 'Missing required fields' });
-    }
-
-    try {
-        const [results] = await studentDB.query(`
-            INSERT INTO grades (enrollment_id, teacher_id, grade, remarks)
-            VALUES (?, ?, ?, ?)
-        `, [enrollment_id, teacher_id, grade || null, remarks || null]);
-
-        res.status(201).json({ success: true, id: results.insertId });
-    } catch (err) {
-        console.error("Insert error:", err);
-        res.status(500).json({ success: false, error: 'Failed to add grade' });
-    }
-};
-
-// Teacher updates a grade
+// gradesController.js
 export const updateGrade = async (req, res) => {
-    const { id } = req.params;
-    const { grade, remarks } = req.body;
+  const { student_id, subject_id, teacher_id, grade, remarks, academic_year_id } = req.body;
 
-    try {
-        await studentDB.query(`
-            UPDATE grades SET grade = ?, remarks = ? WHERE id = ?
-        `, [grade, remarks, id]);
+  if (!student_id || !subject_id || !teacher_id || grade === undefined || !academic_year_id) {
+    return res.status(400).json({ success: false, error: 'Missing required fields' });
+  }
 
-        res.json({ success: true });
-    } catch (err) {
-        console.error("Update error:", err);
-        res.status(500).json({ success: false, error: 'Failed to update grade' });
-    }
+  try {
+    await studentDB.query(`
+      INSERT INTO grades (student_id, subject_id, teacher_id, grade, remarks, academic_year_id)
+      VALUES (?, ?, ?, ?, ?, ?)
+      ON DUPLICATE KEY UPDATE grade = VALUES(grade), remarks = VALUES(remarks)
+    `, [student_id, subject_id, teacher_id, grade, remarks, academic_year_id]);
+
+    res.json({ success: true, message: 'Grade saved successfully' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, error: 'Failed to save grade' });
+  }
 };

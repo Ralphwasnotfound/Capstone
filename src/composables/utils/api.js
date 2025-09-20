@@ -171,4 +171,16 @@ export const fetchSemesters = async () => {
   }
 };
 
+// Fetch subjects assigned to a teacher
+export async function fetchTeacherSubjects(teacherId) {
+    try {
+        const res = await api.get(`/teachers/${teacherId}/subjects`)
+        return { success: true, data: res.data.data }
+    } catch (err) {
+        console.error('Fetch teacher subjects failed:', err)
+        return { success: false, error: err }
+    }
+}
+
+
 export default api

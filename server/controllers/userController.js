@@ -52,11 +52,12 @@ export const loginUser = async (req, res) => {
         }
 
         if (user.role === 'teacher') {
-            const [teacherRows] = await userDB.query('SELECT status FROM teachers WHERE user_id = ?', [user.id])
+            const [teacherRows] = await userDB.query('SELECT id, status FROM teachers WHERE user_id = ?', [user.id])
             const teacher = teacherRows[0]
             if (!teacher || teacher.status !== 'approved') {
                 return res.status(403).json({ error: 'Your account is not yet Approved.'})
             }
+            user.teacher_id = teacher.id
         }
 
         const token = jwt.sign(

@@ -59,9 +59,12 @@ export default{
         '/admin/enrollments',
         // APPROVAL PAGE
         '/admin/approval/teachers',
-        '/admin/approval/students'
+        '/admin/approval/students',
+        // GRADES
+        '/grades/:subjectId'
       ]
       return hiddenRoutes.includes(this.$route.path) || 
+      /^\/grades\/\d+$/.test(this.$route.path) ||         // /grades/:subjectId
       /^\/student\/\d+\/subjects$/.test(this.$route.path)
     }
   }

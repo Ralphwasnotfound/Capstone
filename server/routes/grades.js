@@ -1,14 +1,13 @@
 import express from 'express';
+import { verifyToken } from '../middleware/auth.js';
 import { 
-    getGradesByStudent, 
-    createGrade, 
-    updateGrade 
+    getTeacherSubjectsWithStudents , updateGrade
 } from '../controllers/gradesController.js';
 
 const router = express.Router();
 
-router.get('/:studentId', getGradesByStudent);  // get grades for a student
-router.post('/', createGrade);                  // add new grade
-router.put('/:id', updateGrade);               // update grade
+router.get('/:teacherId/subjects-with-students', getTeacherSubjectsWithStudents)
+router.post('/update', verifyToken, updateGrade);
+
 
 export default router;

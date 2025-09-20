@@ -59,6 +59,61 @@ export const getTeacherSubjects = async (req, res) => {
 }
 
 
+// Get all subjects assigned to a teacher with their students
+export const getTeacherSubjectsWithStudents = async (req, res) => {
+    const teacherId = req.params.id;
+
+    try {
+        const [rows] = await studentDB.query(`
+            SELECT 
+              s.id AS subject_id,
+              s.code AS subject_code,
+              s.name AS subject_name,
+              s.units,
+              s.year_level,
+              st.id AS student_id,
+              st.full_name
+            FROM teacher_subjects ts
+            JOIN subjects s ON ts.subject_id = s.id
+            LEFT JOIN enrollments e 
+              ON e.subject_id = s.id 
+             AND e.teacher_id = ts.teacher_id
+            LEFT JOIN students st ON st.id = e.student_id
+            WHERE ts.teacher_id = ?
+        `, [teacherId]);
+
+        // Group rows by subject
+        const subjects = rows.reduce((acc, row) => {
+            let subject = acc.find(sub => sub.id === row.subject_id);
+            if (!subject) {
+                subject = {
+                    id: row.subject_id,
+                    code: row.subject_code,
+                    name: row.subject_name,
+                    units: row.units,
+                    year_level: row.year_level,
+                    students: []
+                };
+                acc.push(subject);
+            }
+            if (row.student_id) {
+                subject.students.push({
+                    id: row.student_id,
+                    full_name: row.full_name
+                });
+            }
+            return acc;
+        }, []);
+
+        res.json({ success: true, data: subjects });
+    } catch (err) {
+        console.error("Error fetching teacher subjects:", err);
+        res.status(500).json({ success: false, error: 'Failed to fetch teacher subjects' });
+    }
+};
+
+
+
 
 // ENROLLMENT_SYSTEM
 export const getApprovedTeachers = async (req, res) => {
@@ -74,3 +129,4 @@ export const getApprovedTeachers = async (req, res) => {
     res.status(500).json({ success: false, message: 'Database error' })
   }
 }
+
