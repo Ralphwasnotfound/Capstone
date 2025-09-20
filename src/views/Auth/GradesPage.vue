@@ -5,15 +5,14 @@
     <div v-if="students.length === 0">
       No students enrolled in this subject.
     </div>
-    
 
     <div v-else>
       <div v-for="student in students" :key="student.id" class="mb-4">
         <GradeForm
           :student="student"
-          :teacherId="teacherId"
+          :teacherId="student.teacher_id"
           :subjectId="subjectId"
-          :academicYearId="academicYearId"
+          :academicYearId="student.academic_year_id"
           @saved="onGradeSaved"
         />
       </div>
@@ -29,16 +28,13 @@ export default {
   components: { GradeForm },
   data() {
     return {
-      teacherId: null,
       subjectId: null,
       subjectName: "",
-      students: [],  // always starts as empty array
-      academicYearId: 1, // make dynamic later
+      students: [],
     };
   },
   async mounted() {
     this.subjectId = this.$route.params.subjectId;
-
     if (!this.subjectId) return;
 
     const token = localStorage.getItem("token");
@@ -49,13 +45,20 @@ export default {
         {
           headers: {
             Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
           },
         }
       );
 
       if (res.data.success) {
-        this.students = res.data.students; // ✅ fix here
-        this.subjectName = "Subject " + this.subjectId;
+        // Map each student to ensure teacher_id and academic_year_id exist
+        this.students = res.data.students.map(s => ({
+          ...s,
+          teacher_id: s.teacher_id,       // from enrollment
+          academic_year_id: s.academic_year_id, // from enrollment
+        }));
+
+        this.subjectName = res.data.subjectName || "Subject " + this.subjectId;
       }
     } catch (err) {
       console.error("Failed to fetch enrolled students:", err);
@@ -64,11 +67,12 @@ export default {
   methods: {
     onGradeSaved(updatedStudent) {
       const idx = this.students.findIndex(
-        (s) => s.student_id === updatedStudent.student_id
+        s => s.id === updatedStudent.id || s.id === updatedStudent.student_id
       );
-      if (idx !== -1) this.students[idx] = updatedStudent;
+      if (idx !== -1) {
+        this.students[idx] = { ...this.students[idx], ...updatedStudent };
+      }
     },
   },
 };
 </script>
-

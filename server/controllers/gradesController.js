@@ -62,6 +62,7 @@ export const getTeacherSubjectsWithStudents = async (req, res) => {
 
 // gradesController.js
 export const updateGrade = async (req, res) => {
+     console.log("Request Body:", req.body); 
   const { student_id, subject_id, teacher_id, grade, remarks, academic_year_id } = req.body;
 
   if (!student_id || !subject_id || !teacher_id || grade === undefined || !academic_year_id) {
@@ -79,5 +80,36 @@ export const updateGrade = async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, error: 'Failed to save grade' });
+  }
+};
+
+// Get students enrolled in a specific subject along with their grades
+export const getStudentsBySubject = async (req, res) => {
+  const subjectId = req.params.subjectId;
+  if (!subjectId) return res.status(400).json({ success: false, error: "Subject ID is required" });
+
+  try {
+    const [rows] = await studentDB.query(`
+  SELECT 
+    st.id AS id,
+    st.full_name,
+    g.id AS grade_id,
+    g.grade,
+    g.remarks,
+    e.teacher_id,
+    e.academic_year_id
+  FROM enrollments e
+  JOIN students st ON st.id = e.student_id
+  LEFT JOIN grades g 
+    ON g.student_id = st.id AND g.subject_id = e.subject_id
+  WHERE e.subject_id = ? AND e.status = 'enrolled'
+  ORDER BY st.full_name
+`, [subjectId]);
+
+
+    res.json({ success: true, students: rows });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, error: "Failed to fetch students" });
   }
 };

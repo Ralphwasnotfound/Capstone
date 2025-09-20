@@ -41,7 +41,7 @@ app.use(morgan('dev'))
 // Routes
 app.use('/students', verifyToken, studentRoutes)
 app.use('/users', userRoutes)
-app.use('/grades', gradesRoutes)
+app.use('/grades', verifyToken, gradesRoutes)
 app.use('/subjects', subjectsRoutes)
 app.use('/teachers/approval', teacherRoutes)        // for admin approval
 app.use('/students/approval', studentApprovalRoutes)        // for admin approval

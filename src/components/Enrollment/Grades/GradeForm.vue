@@ -5,7 +5,7 @@
     <form @submit.prevent="submitGrade" class="flex gap-2 items-center">
       <input 
         type="number" 
-        v-model="localGrade" 
+        v-model.number="localGrade" 
         placeholder="Grade" 
         min="0" 
         max="100" 
@@ -30,10 +30,10 @@ import axios from 'axios'
 
 export default {
   props: {
-    student: Object,
-    teacherId: Number,
-    subjectId: Number,
-    academicYearId: Number
+    student: { type: Object, required: true },
+    teacherId: { type: Number, required: true },
+    subjectId: { type: Number, required: true },
+    academicYearId: { type: Number, required: true },
   },
   data() {
     return {
@@ -43,17 +43,33 @@ export default {
   },
   methods: {
     async submitGrade() {
-      try {
-        const payload = {
-          student_id: this.student.id,
-          teacher_id: this.teacherId,
-          subject_id: this.subjectId,
-          grade: this.localGrade,
-          remarks: this.localRemarks,
-          academic_year_id: this.academicYearId
-        }
+      if (!this.teacherId || !this.academicYearId) {
+        console.error("Missing teacherId or academicYearId. Cannot submit grade.");
+        return;
+      }
 
-        const res = await axios.post('http://localhost:3000/grades', payload)
+      const payload = {
+        student_id: this.student.id,
+        teacher_id: this.teacherId,
+        subject_id: this.subjectId,
+        grade: this.localGrade,
+        remarks: this.localRemarks,
+        academic_year_id: this.academicYearId
+      }
+
+      try {
+        const res = await axios.post(
+          'http://localhost:3000/grades/update',
+          payload,
+          {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`,
+              'Content-Type': 'application/json'
+            }
+          }
+        )
+
+        console.log("Payload sent:", payload)
 
         if (res.data.success) {
           this.$emit('saved', { ...this.student, grade: this.localGrade, remarks: this.localRemarks })

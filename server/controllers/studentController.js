@@ -317,10 +317,19 @@ export const getEnrolledStudentsBySubject = async (req, res) => {
 
   try {
     const [rows] = await studentDB.query(
-      `SELECT e.id, s.full_name
+      `SELECT 
+        st.id, 
+        st.full_name,
+        g.id AS grade_id,
+        g.grade,
+        g.remarks,
+        e.teacher_id,
+        e.academic_year_id
        FROM enrollments e
-       JOIN students s ON e.student_id = s.id
-       WHERE e.subject_id = ?`,
+       JOIN students st ON st.id = e.student_id
+       LEFT JOIN grades g ON g.student_id = st.id AND g.subject_id = e.subject_id
+       WHERE e.subject_id = ? AND e.status = 'enrolled'
+       ORDER BY st.full_name`,
       [subjectId]
     );
 
