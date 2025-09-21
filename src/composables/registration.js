@@ -27,7 +27,8 @@ export async function registerTeacher(payload){
 export async function registerStudent(payload) {
     try {
         const response = await api.post('/auth/students', payload)
-        return { success:true, data: response.data}
+        const { user, token } = response.data
+        return { success:true, user, token}
     } catch (err) {
         console.error('Student Registration Error:', err)
         return { success: false, error: err.response?.data?.error || 'Student Registration Failed'}

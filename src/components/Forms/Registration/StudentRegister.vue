@@ -65,7 +65,8 @@
 </template>
 
 <script>
-import { registration, registerStudent } from '@/composables/registration';
+import { useUserStore } from '@/stores/users';
+import { registerStudent } from '@/composables/registration';
 
 export default {
     name: 'StudentRegister',
@@ -82,8 +83,10 @@ export default {
     },
     methods: {
         async handleSubmit() {
-    const isValid = registration(this.form)
-    if (!isValid) return
+            if (this.form.password !== this.form.confirmPassword) {
+                alert("Password do not match!")
+                return
+            }
 
     const payload = {
         full_name: this.form.fullName,
@@ -93,7 +96,6 @@ export default {
         contact: this.form.contact,
 
         // Default values for required student fields
-        student_number: 'S' + Math.floor(Math.random() * 100000), // example: S12345
         street: null,
         barangay: null,
         city: null,
@@ -103,17 +105,21 @@ export default {
         guardian_contact: null
     }
 
-    const { success, error } = await registerStudent(payload)
+    const res = await registerStudent(payload)
+    const userStore = useUserStore()
 
-    if(success) {
+    if(res.success) {
+        userStore.setUser(res.user)
+        localStorage.setItem('token', res.token)
         alert('Registration Successful!')
+
         this.form.fullName = ''
         this.form.email = ''
         this.form.password = ''
         this.form.confirmPassword = ''
         this.form.contact = ''
     } else {
-        alert(`Registration Failed: ${error}`)
+        alert(`registration Failed: ${res.error}`)
     }
 }
 

@@ -5,7 +5,6 @@
                 <th>Subject</th>
                 <th>Grade</th>
                 <th>Remarks</th>
-                <th v-if="editable">Actions</th>
             </tr>
         </thead>
         <tbody>
@@ -13,9 +12,6 @@
                 <td>{{ g.subject_name }}</td>
                 <td>{{ g.grade ?? 'Not yet graded' }}</td>
                 <td>{{ g.remarks ?? '-' }}</td>
-                <td v-if="editable">
-                    <button @click="$emit('edit', g)">Edit</button>
-                </td>
             </tr>
         </tbody>
     </table>

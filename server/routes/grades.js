@@ -3,15 +3,16 @@ import { verifyToken } from '../middleware/auth.js';
 import { 
     getTeacherSubjectsWithStudents, 
     updateGrade,
-    getStudentsBySubject // <--- add this
+    getStudentsBySubject,
+    getGradesByStudent // <--- add this
 } from '../controllers/gradesController.js';
 
 const router = express.Router();
-
+// NEW route for frontend fetching
+router.get('/student/:id', verifyToken, getGradesByStudent);
+router.get('/subject/:subjectId', verifyToken, getStudentsBySubject);
 router.get('/:teacherId/subjects-with-students', getTeacherSubjectsWithStudents);
 router.post('/update', verifyToken, updateGrade);
 
-// NEW route for frontend fetching
-router.get('/subject/:subjectId', verifyToken, getStudentsBySubject);
 
 export default router;

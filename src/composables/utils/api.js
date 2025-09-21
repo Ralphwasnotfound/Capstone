@@ -90,16 +90,6 @@ export async function fetchEnrolledStudents() {
 }
 
 // Grades
-// get Grades for a student
-export async function fetchGradesByStudent(studentId) {
-    try {
-        const res = await api.post(`/grades/${studentId}`)
-        return { success: true, data: res.data}
-    } catch (err) {
-        console.err('Fetch grades failed', err)
-        return { success: false, error: err}
-    }
-}
 
 // Teacher adds a grade
 export async function createGrade(payload) {
@@ -174,12 +164,34 @@ export const fetchSemesters = async () => {
 // Fetch subjects assigned to a teacher
 export async function fetchTeacherSubjects(teacherId) {
     try {
-        const res = await api.get(`/teachers/${teacherId}/subjects`)
+        const res = await api.get(`/teachers/${teacherId}/subjects`, {
+            headers: {
+                Authorization: `Bearer ${localStorage.getItem('token')}`
+            }
+        })
+        if (!res.data.success) {
+            return { success: false, error: res.data.error || 'Unknown backend error' }
+        }
+
+        if (!res.data.data || res.data.data.length === 0) {
+            return { success: false, error: 'No grades found for this student' }
+        }
+
         return { success: true, data: res.data.data }
     } catch (err) {
         console.error('Fetch teacher subjects failed:', err)
         return { success: false, error: err }
     }
+}
+
+export const fetchGradesByStudent = async (studentId) => {
+  try {
+    const res = await api.get(`/grades/student/${studentId}`)
+    return { success: true, data: res.data.data}
+  } catch (err) {
+    console.error('Error fetching grades:', err.response?.data || err.message)
+    return { success: false, error: err.message }
+  }
 }
 
 

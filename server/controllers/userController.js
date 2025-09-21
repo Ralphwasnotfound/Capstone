@@ -60,6 +60,18 @@ export const loginUser = async (req, res) => {
             user.teacher_id = teacher.id
         }
 
+        if (user.role === 'student') {
+            const [studentRows] = await userDB.query(
+                'SELECT id, status FROM students WHERE user_id = ?',
+                [user.id]
+            )
+            const student = studentRows[0]
+            if (!student || !['approved', 'registration_approved'].includes(student.status)) {
+                return res.status(403).json({ error: 'Your Account is not approved yet' })
+            }
+            user.student_id = student.id
+        }
+
         const token = jwt.sign(
             { id: user.id, role: user.role},
             process.env.JWT_SECRET,
@@ -92,7 +104,6 @@ export const getUsers = async (req, res) => {
                 t.status AS teacher_status,
 
                 -- Student details
-                s.student_number,
                 s.status AS student_status
 
             FROM users u

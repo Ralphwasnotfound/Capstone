@@ -7,32 +7,46 @@
 
     <!-- TEACHER -->
     <div v-else-if="role === 'teacher'">
-      
+      <h1>This is the Teacher Grades View</h1>
     </div>
+
+    <!-- STUDENT -->
+    <div v-else-if="role === 'student'">
+      <h1>This is the Student Grades View</h1>
+      <GradeTable :grades="grades"/>
     </div>
+  </div>
 </template>
 
 <script>
 import { useUserStore } from '@/stores/users.js'
 import { fetchGradesByStudent } from '@/composables/utils/api'
+import GradeTable from '@/components/Enrollment/Grades/GradeTable.vue'
 
 export default {
-  props: { role: { type: String, required: true } },
+  components: {
+    GradeTable
+  },
+  props: {
+    role: { type: String, required: true }
+  },
   data() {
-    return { teacherId: null, grades: [] }
+    return {
+      teacherId: null,
+      grades: []
+    }
   },
   async mounted() {
     const userStore = useUserStore()
+    const studentId = userStore.user?.studentId
+    console.log('userStore.user:', userStore.user)
 
-    if (this.role === 'teacher') {
-      this.teacherId = userStore.user?.id || null
-    }
-
-    if (this.role === 'student') {
-      const studentId = userStore.user?.id
-      if (!studentId) return
+    if (studentId) {
       const res = await fetchGradesByStudent(studentId)
-      if (res.success) this.grades = res.data
+      if (res.success) 
+        this.grades = res.data
+    } else {
+      console.warn('No studentId found, skipping API call')
     }
   }
 }

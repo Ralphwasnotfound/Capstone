@@ -113,3 +113,42 @@ export const getStudentsBySubject = async (req, res) => {
     res.status(500).json({ success: false, error: "Failed to fetch students" });
   }
 };
+
+
+export const getGradesByStudent = async (req, res) => {
+  const studentId = req.params.id;
+  console.log("Fetching grades for studentId:", studentId);
+
+  if (!studentId) {
+    return res.status(400).json({ success: false, error: "Student ID is required" });
+  }
+
+  try {
+    const [rows] = await studentDB.query(`
+      SELECT 
+        e.id AS enrollment_id,
+        s.name AS subject_name,
+        g.grade,
+        g.remarks,
+        st.id AS student_id
+      FROM enrollments e
+      JOIN subjects s ON s.id = e.subject_id
+      JOIN students st ON st.id = e.student_id
+      LEFT JOIN grades g 
+        ON g.student_id = e.student_id
+        AND g.subject_id = e.subject_id
+      WHERE e.student_id = ?
+      ORDER BY s.name
+    `, [studentId]);
+
+    console.log("Query result:", rows);
+
+    res.json({ success: true, data: rows });
+  } catch (error) {
+    console.error("Error fetching grades:", error);
+    res.status(500).json({ success: false, error: "Failed to fetch grades" });
+  }
+};
+
+
+
