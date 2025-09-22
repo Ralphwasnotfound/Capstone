@@ -14,10 +14,11 @@
 
     <!-- Admin  -->
     <div v-if="role === 'admin'">
+      <AcademicYears/>
       <div class="flex justify-between py-2">
+        
         <div class="flex flex-col justify-between">
           <UserTable :users="users" @user-deleted="removeUser"/>
-          
           <div class="py-2">
             <router-link to="/admin/enrollments">
               <button
@@ -78,6 +79,7 @@ import DashboardAnouncement from './DashboardAnouncement.vue';
 import UserTable from '../Admin/UserTable.vue';
 import { fetchUsers } from '@/composables/utils/api';
 import { fetchStudents } from '@/composables/utils/api';
+import AcademicYears from '@/components/Forms/Years/AcademicYears.vue';
 
 
 
@@ -89,6 +91,7 @@ export default {
     DashboardDigitalIDs,
     DashboardAnouncement,
     UserTable,
+    AcademicYears
   },
   props: {
     role: {

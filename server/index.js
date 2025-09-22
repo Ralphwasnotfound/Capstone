@@ -20,6 +20,7 @@ import dropboxAuthRouter from './routes/dropbox/dropboxAuth.js'
 import teacherUploadsRouter from './routes/dropbox/teacherUploads.js'
 import teacherDashboardRoutes from './routes/teachers/teacherDashboard.js'
 import enrollmentRoute from './routes/dates/enrollment.js'
+import academicYearsRoute from './routes/acadyears/academicYears.js'
 
 
 
@@ -27,7 +28,7 @@ import enrollmentRoute from './routes/dates/enrollment.js'
 const app = express()
 app.use(cors({
     origin: ['http://localhost:5173'], 
-        methods: 'GET,POST,PUT,DELETE',
+        methods: 'GET,POST,PUT,DELETE,PATCH',
             allowedHeaders: ['Content-Type', 'Authorization'],
                 credentials: true,
                     
@@ -49,6 +50,7 @@ app.use(cors({
                     app.use('/auth/students', registerStudentRoutes) // for teacher signup
                     app.use('/teachers', teacherDashboardRoutes)
                     app.use('/enrollment', enrollmentRoute)
+                    app.use('/academic-years', academicYearsRoute)
 
                     app.use("/", dropboxAuthRouter)
                     app.use('/dropbox', teacherUploadsRouter)

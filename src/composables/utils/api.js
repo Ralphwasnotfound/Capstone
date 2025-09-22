@@ -2,6 +2,7 @@ import axios from 'axios'
 
 const api = axios.create({
     baseURL: 'http://localhost:3000', 
+    headers: { 'Content-Type': 'application/json' }
 })
 
 api.interceptors.request.use((config) => {
@@ -191,6 +192,52 @@ export const fetchGradesByStudent = async (studentId) => {
   } catch (err) {
     console.error('Error fetching grades:', err.response?.data || err.message)
     return { success: false, error: err.message }
+  }
+}
+
+// ACADEMIC YEARS
+export async function fetchAcademicYears() {
+  try {
+    const res = await api.get('/academic-years')
+    return { success: true, data: res.data.data || res.data }
+  } catch (err) {
+    console.error('Fetch academic years failed:', err)
+    return { success: false, error: err.response?.data?.error || err.message }
+  }
+}
+
+// Create a new academic year
+export async function createAcademicYear(payload) {
+  try {
+    const res = await api.post('/academic-years', payload)
+    return { success: true, data: res.data }
+  } catch (err) {
+    console.error('Create academic year failed:', err)
+    return { success: false, error: err.response?.data?.error || err.message }
+  }
+}
+
+
+// Toggle enable/disable enrollment
+export async function deactivateAcademicYear(id, is_active) {
+  try {
+    const res = await api.patch(`/academic-years/${id}/deactivate`, { is_active: Number(is_active) })
+    return { success: true, data: res.data }
+  } catch (err) {
+    console.error('Deactivate academic semester failed:', err)
+    return { success: false, error: err.response?.data?.error || err.message }
+  }
+}
+
+
+// Delete an academic year
+export async function deleteAcademicYear(id) {
+  try {
+    const res = await api.delete(`/academic-years/${id}`)
+    return { success: true, data: res.data }
+  } catch (err) {
+    console.error('Delete academic year failed:', err)
+    return { success: false, error: err.response?.data?.error || err.message }
   }
 }
 
