@@ -9,7 +9,7 @@
     </div>
 
     <!-- Enrolled Subjects Table -->
-    <table class="min-w-full table-auto border-collapse border border-gray-300 mt-4">
+    <table v-if="subjects.length" class="min-w-full table-auto border-collapse border border-gray-300 mt-4">
       <thead class="bg-gray-100">
         <tr>
           <th class="border border-gray-300 px-4 py-2 text-left font-semibold">Subjects</th>
@@ -27,17 +27,21 @@
         </tr>
       </tbody>
     </table>
+
+    <p v-else class="text-gray-500 mt-4">
+      No subjects enrolled yet.
+    </p>
   </div>
 </template>
 
 <script>
-import axios from 'axios';
+import api from '@/composables/utils/api';
 
 export default {
   data() {
     return {
       status: '',
-      subjects: []
+      subjects: [],
     };
   },
   async mounted() {
@@ -46,17 +50,20 @@ export default {
   methods: {
     async fetchEnrollment() {
       try {
-        const res = await axios.get("/students/me", {
-          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-        });
-        this.status = res.data.data.status || '';
-            this.subjects = res.data.data.subjects.filter(s => s.enrollment_status === 'enrolled');
+        const res = await api.get('/students/me'); // using your api instance with token
+        const student = res.data.data;
 
+        this.status = student.status || '';
+
+        // Show subjects for both approved/enrolled
+        this.subjects = (student.subjects || []).filter(
+          s => s.enrollment_status === 'enrolled' || s.enrollment_status === 'approved'
+        );
       } catch (err) {
         console.error('Error fetching enrollment:', err);
+        this.subjects = [];
       }
     }
   }
 };
 </script>
-

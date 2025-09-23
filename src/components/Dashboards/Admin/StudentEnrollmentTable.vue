@@ -14,6 +14,7 @@
             <th class="p-2 text-left">Course</th>
             <th class="p-2 text-left">Year</th>
             <th class="p-2 text-left">Semester</th>
+            <th class="p-2 text-left">Academic Year</th>
             <th class="p-2 text-left">Date Enrolled</th>
             <th class="p-2 text-left">Actions</th>
           </tr>
@@ -27,13 +28,12 @@
             <td class="p-2">{{ student.full_name || 'N/A' }}</td>
             <td class="p-2">{{ student.student_id || 'N/A' }}</td>
             <td class="p-2">{{ student.email || 'N/A' }}</td>
-            <td class="p-2">
-              {{ student.status && student.status.trim() !== '' ? student.status : 'Pending' }}
-            </td>
+            <td class="p-2">{{ student.status?.trim() || 'Pending' }}</td>
             <td class="p-2">{{ student.enrollment_type || 'N/A' }}</td>
             <td class="p-2">{{ student.course }}</td>
-            <td class="p-2">{{ formatYearLevel (student.year_level) }}</td>
-            <td class="p-2">{{ formatSemester (student.semester_id) }}</td>
+            <td class="p-2">{{ formatYearLevel(student.year_level) }}</td>
+            <td class="p-2">{{ student.semester || 'N/A' }}</td>
+            <td class="p-2">{{ student.academic_year || 'N/A' }}</td>
             <td class="p-2">{{ formatDate(student.created_at) }}</td>
             <td class="p-2">
               <button
@@ -47,7 +47,7 @@
             </td>
           </tr>
           <tr v-if="pendingStudents.length === 0">
-            <td colspan="7" class="text-center py-4">No pending students</td>
+            <td colspan="10" class="text-center py-4">No pending students</td>
           </tr>
         </tbody>
       </table>
@@ -64,9 +64,10 @@
             <th class="p-2 text-left">Email</th>
             <th class="p-2 text-left">Status</th>
             <th class="p-2 text-left">Enrollment Type</th>
-            <th class="p-2 text-left">Courses</th>
+            <th class="p-2 text-left">Course</th>
             <th class="p-2 text-left">Year</th>
             <th class="p-2 text-left">Semester</th>
+            <th class="p-2 text-left">Academic Year</th>
             <th class="p-2 text-left">Date Enrolled</th>
             <th class="p-2 text-left">Actions</th>
           </tr>
@@ -80,18 +81,17 @@
             <td class="p-2">{{ student.full_name || 'N/A' }}</td>
             <td class="p-2">{{ student.student_id || 'N/A' }}</td>
             <td class="p-2">{{ student.email || 'N/A' }}</td>
-            <td class="p-2">
-              {{ student.status && student.status.trim() !== '' ? student.status : 'Approved' }}
-            </td>
+            <td class="p-2">{{ student.status?.trim() || 'Approved' }}</td>
             <td class="p-2">{{ student.enrollment_type || 'N/A' }}</td>
             <td class="p-2">{{ student.course }}</td>
-            <td class="p-2">{{ formatYearLevel (student.year_level) }}</td>
-            <td class="p-2">{{ formatSemester (student.semester_id) }}</td>
+            <td class="p-2">{{ formatYearLevel(student.year_level) }}</td>
+            <td class="p-2">{{ student.semester || 'N/A' }}</td>
+            <td class="p-2">{{ student.academic_year || 'N/A' }}</td>
             <td class="p-2">{{ formatDate(student.created_at) }}</td>
             <td class="p-2 text-green-600 font-semibold">Approved</td>
           </tr>
           <tr v-if="enrolledStudents.length === 0">
-            <td colspan="7" class="text-center py-4">No enrolled students</td>
+            <td colspan="10" class="text-center py-4">No enrolled students</td>
           </tr>
         </tbody>
       </table>
@@ -114,16 +114,9 @@ export default {
         3: "3rd",
         4: "4th",
       },
-      semesterMap: {
-        1: "1st",
-        2: "2nd"
-      }
     }
   },
   methods: {
-    displayStatus(status, fallback) {
-      return status && status.trim() !== '' ? status : fallback
-    },
     formatDate(date) {
       if (!date) return 'N/A'
       const parsed = new Date(date)
@@ -135,17 +128,9 @@ export default {
         minute: '2-digit'
       })
     },
-
-    // Format Year Level
     formatYearLevel(level) {
       return this.yearLevelMap[level] || level || 'N/A'
     },
-
-    // Format Semester
-    formatSemester(sem) {
-      return this.semesterMap[sem] || sem || 'N/A'
-    },
-
     async loadPendingStudents() {
       try {
         const res = await fetchPendingStudents()
@@ -154,7 +139,6 @@ export default {
         console.error('Failed to fetch pending students:', err)
       }
     },
-
     async loadEnrolledStudents() {
       try {
         const res = await fetchEnrolledStudents()
@@ -163,7 +147,6 @@ export default {
         console.error('Failed to fetch enrolled students:', err)
       }
     },
-
     goToSubjectSelection(studentId) {
       this.$router.push(`/student/${studentId}/subjects`)
     }
@@ -174,4 +157,3 @@ export default {
   }
 }
 </script>
-

@@ -2,6 +2,7 @@ import express from 'express';
 import { verifyToken } from '../../middleware/auth.js';
 import {
   getAcademicYears,
+  getActiveAcademicYear,
   createAcademicYear,
   deactivateAcademicYear,
   deleteAcademicYear
@@ -12,6 +13,7 @@ const router = express.Router();
 
 // GET all academic years
 router.get('/', verifyToken, getAcademicYears);
+router.get('/active', verifyToken, getActiveAcademicYear)
 
 // POST a new academic year
 router.post('/', verifyToken, createAcademicYear);

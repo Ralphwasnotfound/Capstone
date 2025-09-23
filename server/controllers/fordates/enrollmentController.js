@@ -53,54 +53,22 @@ export const createAcademicYear = async (req, res) => {
   }
 };
 
-// GET semesters
-export const getSemesters = async (req, res) => {
+// GET active terms for enrollment
+export const getTerms = async (req, res) => {
   try {
     const [rows] = await studentDB.query(
-      `SELECT s.*, ay.year AS academic_year
-       FROM semesters s
-       JOIN academic_years ay ON s.academic_year_id = ay.id
-       ORDER BY ay.year DESC, s.start_date ASC`
+      `SELECT 
+         id AS academic_year_id,
+         CONCAT(semester, ' (', year, ')') AS name
+       FROM academic_years
+       WHERE status = 'open'
+       ORDER BY created_at ASC`
     );
-    console.log("fetch semesters:", rows)
+
     res.json({ success: true, data: rows });
   } catch (err) {
-    console.error("Error fetching semesters:", err);
-    res.status(500).json({ success: false, message: "Database error" });
-  }
-};
-
-// CREATE semester
-export const createSemester = async (req, res) => {
-  const { name, start_date, end_date, status, academic_year_id } = req.body;
-
-  if (!name || !start_date || !end_date || !academic_year_id) {
-    return res.status(400).json({ success: false, message: "Missing required fields" });
-  }
-
-  try {
-    // Check for overlapping semester in the same academic year
-    const [overlap] = await studentDB.query(
-      `SELECT id FROM semesters 
-       WHERE academic_year_id = ? 
-       AND (start_date <= ? AND end_date >= ?)`,
-      [academic_year_id, end_date, start_date]
-    );
-
-    if (overlap.length > 0) {
-      return res.status(400).json({ success: false, message: "Semester overlaps with an existing one" });
-    }
-
-    const [result] = await studentDB.query(
-      `INSERT INTO semesters (name, start_date, end_date, status, academic_year_id)
-       VALUES (?, ?, ?, ?, ?)`,
-      [name, start_date, end_date, status, academic_year_id]
-    );
-
-    res.json({ success: true, id: result.insertId });
-  } catch (err) {
-    console.error("Error creating semester:", err);
-    res.status(500).json({ success: false, message: "Insert failed" });
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Database error' });
   }
 };
 

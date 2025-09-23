@@ -48,26 +48,25 @@
       </select>
     </div>
 
-    <!-- Semester Picker -->
-    <div>
-      <label for="semester" class="block font-medium">Semester</label>
-      <select v-model="form.semester_id" id="semester" class="border rounded p-2 w-full" required>
-        <option disabled value="">Select Semester</option>
-        <option v-for="sem in semesters" :key="sem.id" :value="sem.id">
-          {{ sem.name }} ({{ sem.academic_year }})
-        </option>
-      </select>
+    <!-- Active Semester & Year -->
+    <div v-if="activeYear">
+      <p class="text-gray-700">
+        Semester: <strong>{{ activeYear.semester }}</strong> | Academic Year: <strong>{{ activeYear.year }}</strong>
+      </p>
     </div>
 
-
-    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+    <button 
+      type="submit" 
+      class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+      :disabled="!activeYear"
+    >
       Enroll
     </button>
   </form>
 </template>
 
 <script>
-import { submitEnrollment, fetchStudents, fetchSemesters } from '@/composables/utils/api';
+import { submitEnrollment, fetchStudents, fetchActiveAcademicYear } from '@/composables/utils/api';
 
 export default {
   name: 'EnrollmentForm',
@@ -79,27 +78,32 @@ export default {
         course_id: '',
         year_level: '',
         enrollment_type: '',
-        semester_id: ''
+        academic_year_id: null,
+        semester: ''
       },
       students: [],
-      semesters: []
+      activeYear: null
     }
   },
   methods: {
     async handleSubmit() {
+      if (!this.activeYear) {
+        alert('Cannot submit: Active academic year not found.');
+        return;
+      }
+
+      // Ensure academic year and semester are always included
+      this.form.academic_year_id = this.activeYear.id;
+      this.form.semester = this.activeYear.semester;
+
+      console.log('Submitting enrollment:', this.form); // ✅ Debug check
+
       try {
         const { success } = await submitEnrollment(this.form);
 
         if (success) {
           alert('Enrollment Submitted');
-          this.form = {
-            full_name: '',
-            email: '',
-            course_id: '',
-            year_level: '',
-            enrollment_type: '',
-            semester_id: ''
-          };
+          this.resetForm();
           this.loadStudents();
         } else {
           alert('Submission Failed');
@@ -109,23 +113,41 @@ export default {
         alert('Submission Failed');
       }
     },
-    async loadSemesters() {
-      const { success, data } = await fetchSemesters();
-      if (success && Array.isArray(data)) {
-        this.semesters = data;
-      } else {
-        this.semesters = []
-        console.warn('No Semesters Found')
-      } 
+
+    resetForm() {
+      this.form = {
+        full_name: '',
+        email: '',
+        course_id: '',
+        year_level: '',
+        enrollment_type: '',
+        academic_year_id: this.activeYear.id,
+        semester: this.activeYear.semester
+      };
     },
+
+    async loadActiveYear() {
+      try {
+        const { success, data } = await fetchActiveAcademicYear();
+        if (success && data) this.activeYear = data;
+        else console.warn('No active academic year found');
+      } catch (err) {
+        console.error('Error fetching active academic year:', err);
+      }
+    },
+
     async loadStudents() {
-      const { success, data } = await fetchStudents();
-      if (success) this.students = data;
-    },
+      try {
+        const { success, data } = await fetchStudents();
+        if (success) this.students = data;
+      } catch (err) {
+        console.error('Error fetching students:', err);
+      }
+    }
   },
   mounted() {
+    this.loadActiveYear();
     this.loadStudents();
-    this.loadSemesters();
-  },
+  }
 }
 </script>

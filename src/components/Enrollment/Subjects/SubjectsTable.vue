@@ -126,9 +126,10 @@ export default {
 
         // Fetch subjects by course
         const subjectsRes = await axios.get(
-          `http://localhost:3000/subjects/course/${this.student.course_id}?studentId=${this.student.id}`,
+          `http://localhost:3000/subjects/course/${this.student.course_id}?studentId=${this.student.id}&year_level=${this.student.year_level}&semester=${this.student.semester || 1}`,
           { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
         );
+
 
         const enrolledSubjects = this.student.subjects || [];
 
@@ -160,41 +161,24 @@ export default {
       }
     },
     async confirmEnrollment() {
-  if (!this.selectedSubjects.length) {
-    return alert("No subjects selected!");
-  }
+  if (!this.selectedSubjects.length) return alert("No subjects selected!");
 
-  const studentId = this.$route.params.id;
-
-  // Make sure each subject has a teacher selected
+  // Make sure each subject has a teacher
   for (const subj of this.selectedSubjects) {
-    if (!subj.selectedTeacherId) {
-      return alert(`Please select a teacher for ${subj.name}`);
-    }
+    if (!subj.selectedTeacherId) return alert(`Please select a teacher for ${subj.name}`);
   }
 
-  // Map selected subjects to the format expected by the backend
   const subjects = this.selectedSubjects.map(s => ({
     subjectId: s.id,
     teacherId: s.selectedTeacherId
   }));
 
   try {
-    // ✅ Use the backend endpoint that automatically ensures an active academic year
-    const yearRes = await axios.get(
-      `http://localhost:3000/enrollment/academic-years/active`,
-      { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
-    );
+    const studentId = this.$route.params.id;
 
-    const activeYear = yearRes.data.success ? yearRes.data.data : null;
-    if (!activeYear) {
-      return alert("Failed to get or create an active academic year.");
-    }
-
-    // Send enrollment request to approve student
     await axios.put(
       `http://localhost:3000/students/${studentId}/approve`,
-      { subjects, semester_id: this.selectedSubjects[0].semester_id || 1 }, // make sure you pass a semester
+      { subjects },
       { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
     );
 
@@ -206,6 +190,7 @@ export default {
     alert("Enrollment Failed!");
   }
 }
+
 
 
   },

@@ -53,6 +53,29 @@ export const deactivateAcademicYear = async (req, res) => {
     }
 }
 
+// GET active academic year
+export const getActiveAcademicYear = async (req, res) => {
+  try {
+    const [rows] = await studentDB.query(
+      `SELECT * 
+       FROM academic_years 
+       WHERE is_active = 1
+       ORDER BY id DESC
+       LIMIT 1`
+    );
+
+    if (!rows.length) {
+      return res.status(404).json({ success: false, message: 'No active academic year found' });
+    }
+
+    res.json({ success: true, data: rows[0] });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Failed to fetch active academic year' });
+  }
+};
+
+
 // DELETE
 export const deleteAcademicYear = async (req, res) => {
   try {

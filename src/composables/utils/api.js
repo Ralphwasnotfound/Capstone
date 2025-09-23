@@ -217,6 +217,17 @@ export async function createAcademicYear(payload) {
   }
 }
 
+export async function fetchActiveAcademicYear() {
+  try {
+    const res = await api.get('/academic-years/active');
+    return { success: true, data: res.data.data };
+  } catch (err) {
+    console.error('Error fetching active academic year', err);
+    return { success: false, data: null };
+  }
+};
+
+
 
 // Toggle enable/disable enrollment
 export async function deactivateAcademicYear(id, is_active) {
