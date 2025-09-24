@@ -14,102 +14,134 @@
     <!-- Loading -->
     <p v-if="loading" class="text-gray-500">Loading your enrollment status...</p>
 
-    <!-- Enrollment closed -->
-    <p v-else-if="!academicYearActive" class="text-red-600 font-semibold">
-      Enrollment is currently closed for this academic year.
-    </p>
-
-    <!-- Pending -->
-    <p v-else-if="isPending" class="text-yellow-600 font-semibold">
-      Your enrollment is pending approval.
-    </p>
-
-    <!-- Enrolled -->
-    <p v-else-if="isEnrolled && activeYear" class="text-green-600 font-semibold">
-      You are enrolled for the current semester: {{ activeYear.semester }} ({{ activeYear.year }})
-    </p>
-
-    <!-- Enroll button -->
-    <router-link
-      v-if="!isEnrolled && academicYearActive && !isPending"
-      to="/student-enrollment"
-    >
+    <div v-else>
+      <!-- Enrollment closed -->
       <button
-        :class="buttonClass"
-        class="text-white font-semibold px-6 py-3 rounded-xl shadow-lg transition duration-200"
+        v-if="!academicYearActive"
+        disabled
+        class="bg-red-500 text-white font-semibold px-6 py-3 rounded-xl shadow-lg w-full"
       >
-        Enroll Now
+        Enrollment Closed – Wait for the next semester
       </button>
-    </router-link>
 
-    <!-- Student subjects -->
-    <SubjectsCourses v-if="isEnrolled" />
+      <!-- Semester-specific buttons -->
+      <div v-else>
+        <div v-for="sem in ['1st', '2nd']" :key="sem" class="mb-2">
+          <button
+            v-if="semesterStatus[sem] === 'pending'"
+            disabled
+            class="bg-yellow-500 text-white font-semibold px-6 py-3 rounded-xl shadow-lg w-full"
+          >
+            Enrollment Pending – {{ sem }} Semester
+          </button>
+
+          <button
+            v-else-if="semesterStatus[sem] === 'enrolled'"
+            disabled
+            class="bg-green-500 text-white font-semibold px-6 py-3 rounded-xl shadow-lg w-full"
+          >
+            ✅ Enrolled – {{ sem }} Semester
+          </button>
+
+          <router-link v-else :to="`/student-enrollment?semester=${sem}`">
+            <button
+              class="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-6 py-3 rounded-xl shadow-lg w-full"
+            >
+              Enroll Now – {{ sem }} Semester
+            </button>
+          </router-link>
+        </div>
+      </div>
+
+      <!-- Show subjects after enrolled in any semester -->
+      <SubjectsCourses v-if="subjects.length" :subjects="subjects" />
+    </div>
   </div>
 </template>
 
 <script>
+import axios from 'axios';
+import { fetchActiveAcademicYear } from '@/composables/utils/api';
 import TeacherSubjectsTable from '@/components/Enrollment/Teachers/TeacherSubjectsTable.vue';
 import SubjectsCourses from '../Subject&Courses/SubjectsCourses.vue';
-import api, { fetchActiveAcademicYear } from '@/composables/utils/api';
 
 export default {
   components: { TeacherSubjectsTable, SubjectsCourses },
   props: { role: { type: String, required: true } },
   data() {
     return {
-      isEnrolled: false,
-      isPending: false,
+      semesterStatus: {},       // { '1st': 'pending', '2nd': 'enrolled' }
       academicYearActive: false,
       activeYear: null,
-      loading: true
+      loading: true,
+      studentFound: true,
+      subjects:[]
     };
   },
-  computed: {
-    buttonClass() {
-      if (!this.academicYearActive) return 'bg-red-500 hover:bg-red-600';
-      if (this.isEnrolled) return 'bg-green-500 hover:bg-green-600';
-      if (this.isPending) return 'bg-yellow-500 hover:bg-yellow-600';
-      return 'bg-blue-500 hover:bg-blue-600';
-    }
-  },
-  async mounted() {
-    console.log('Fetching student status and active academic year...');
-    
-    // Fetch student status
-    if (this.role === 'student') {
-      try {
-        const resStudent = await api.get('/students/me');
-        const status = resStudent.data?.data?.status;
-        this.isEnrolled = status === 'enrolled';
-        this.isPending = status === 'pending';
-        console.log('Student status:', status);
-      } catch (err) {
-        console.error('Error fetching student info:', err);
-      }
+  methods: {
+    async loadStudentStatus() {
+      this.loading = true;
+      this.semesterStatus = {};
+      this.academicYearActive = false;
+      this.activeYear = null;
+      this.studentFound = true;
+   
 
-      // Fetch active academic year
       try {
+        // 1️⃣ Get active academic year
         const resYear = await fetchActiveAcademicYear();
-        console.log('Active academic year response:', resYear);
-
         if (resYear.success && resYear.data) {
-          this.academicYearActive = resYear.data.is_active === 1;
           this.activeYear = resYear.data;
-        } else {
-          this.academicYearActive = false;
-          this.activeYear = null;
+          this.academicYearActive = resYear.data.is_active === 1;
+        }
+
+        // 2️⃣ Get student with subjects/enrollments using plain axios
+        const token = localStorage.getItem('token');
+        const resStudent = await axios.get('http://localhost:3000/students/me', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (!resStudent.data.success || !resStudent.data.data) {
+          this.studentFound = false;
+          return;
+        }
+
+        const student = resStudent.data.data;
+
+        if (student.subjects) {
+          this.subjects = student.subjects
+          .filter(sub => sub.enrollment_status)
+          .map(sub => ({
+            ...sub,
+            semester: sub.semester || 'N/A',
+            enrollment_status: sub.enrollment_status || 'pending'
+          }))
+
+          for (const sub of this.subjects) {
+            const sem = sub.semester
+            if (!this.semesterStatus[sem] || this.semesterStatus[sem] !== 'enrolled') {
+              this.semesterStatus[sem] = sub.enrollment_status
+            }
+          }
         }
       } catch (err) {
-        console.error('Error fetching active academic year:', err);
-        this.academicYearActive = false;
-        this.activeYear = null;
+        console.error('Error loading student status:', err.response?.data || err.message);
+        this.studentFound = false;
       } finally {
         this.loading = false;
       }
+    },
+  },
+  mounted() {
+    if (this.role === 'student') {
+      this.loadStudentStatus();
     } else {
-      // Admin/teacher don't need these checks
       this.loading = false;
     }
-  }
+  },
 };
+
 </script>

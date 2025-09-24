@@ -1,68 +1,47 @@
 <template>
-  <div>
-    <!-- Enrollment Status -->
-    <div v-if="status === 'approved' || status === 'enrolled'" class="mb-4 p-3 bg-green-100 text-green-700 rounded">
-      ✅ You are officially enrolled!
-    </div>
-    <div v-else class="mb-4 p-3 bg-yellow-100 text-yellow-700 rounded">
-      ⚠️ Your enrollment is not yet approved.
-    </div>
-
-    <!-- Enrolled Subjects Table -->
-    <table v-if="subjects.length" class="min-w-full table-auto border-collapse border border-gray-300 mt-4">
+  <div class="mt-6">
+    <h2 class="text-xl font-bold mb-4">Your Subjects</h2>
+    <table class="w-full border">
       <thead class="bg-gray-100">
         <tr>
-          <th class="border border-gray-300 px-4 py-2 text-left font-semibold">Subjects</th>
-          <th class="border border-gray-300 px-4 py-2 text-left font-semibold">Course Code</th>
-          <th class="border border-gray-300 px-4 py-2 text-left font-semibold">Units</th>
+          <th class="p-2 text-left">Code</th>
+          <th class="p-2 text-left">Name</th>
+          <th class="p-2 text-left">Units</th>
+          <th class="p-2 text-left">Semester</th>
+          <th class="p-2 text-left">Status</th>
         </tr>
       </thead>
       <tbody>
-        <tr v-for="(subject, index) in subjects" 
-            :key="subject.id"
-            :class="index % 2 === 0 ? 'bg-white hover:bg-gray-100' : 'bg-gray-50 hover:bg-gray-100'">
-          <td class="border border-gray-300 px-4 py-2">{{ subject.subject_name }}</td>
-          <td class="border border-gray-300 px-4 py-2">{{ subject.subject_code }}</td>
-          <td class="border border-gray-300 px-4 py-2">{{ subject.units }}</td>
+        <tr
+          v-for="(subject, index) in subjects"
+          :key="subject.id"
+          :class="index % 2 === 0 ? 'bg-white hover:bg-gray-100' : 'bg-gray-50 hover:bg-gray-100'"
+        >
+          <td class="p-2">{{ subject.code }}</td>
+          <td class="p-2">{{ subject.name }}</td>
+          <td class="p-2">{{ subject.units }}</td>
+          <td class="p-2">{{ subject.semester || 'N/A' }}</td>
+          <td class="p-2">
+            <span :class="subject.enrollment_status === 'enrolled' ? 'text-green-600' : 'text-yellow-600'">
+              {{ subject.enrollment_status || 'pending' }}
+            </span>
+          </td>
+        </tr>
+        <tr v-if="!subjects.length">
+          <td colspan="5" class="text-center py-4">No subjects enrolled yet</td>
         </tr>
       </tbody>
     </table>
-
-    <p v-else class="text-gray-500 mt-4">
-      No subjects enrolled yet.
-    </p>
   </div>
 </template>
 
 <script>
-import api from '@/composables/utils/api';
-
 export default {
-  data() {
-    return {
-      status: '',
-      subjects: [],
-    };
-  },
-  async mounted() {
-    await this.fetchEnrollment();
-  },
-  methods: {
-    async fetchEnrollment() {
-      try {
-        const res = await api.get('/students/me'); // using your api instance with token
-        const student = res.data.data;
-
-        this.status = student.status || '';
-
-        // Show subjects for both approved/enrolled
-        this.subjects = (student.subjects || []).filter(
-          s => s.enrollment_status === 'enrolled' || s.enrollment_status === 'approved'
-        );
-      } catch (err) {
-        console.error('Error fetching enrollment:', err);
-        this.subjects = [];
-      }
+  name: 'SubjectsCourses',
+  props: {
+    subjects: {
+      type: Array,
+      default: () => []
     }
   }
 };

@@ -161,38 +161,47 @@ export default {
       }
     },
     async confirmEnrollment() {
-  if (!this.selectedSubjects.length) return alert("No subjects selected!");
+      if (!this.selectedSubjects.length) 
+        return alert("No subjects selected!");
 
   // Make sure each subject has a teacher
-  for (const subj of this.selectedSubjects) {
-    if (!subj.selectedTeacherId) return alert(`Please select a teacher for ${subj.name}`);
-  }
+    for (const subj of this.selectedSubjects) {
+      if (!subj.selectedTeacherId) {
+        return alert(`Please select a teacher for ${subj.name}`);
+      }
+    }
 
-  const subjects = this.selectedSubjects.map(s => ({
-    subjectId: s.id,
-    teacherId: s.selectedTeacherId
-  }));
+    const studentId = this.$route.params.id
 
-  try {
-    const studentId = this.$route.params.id;
+    try {
+      for (const s of this.selectedSubjects) {
+        await axios.put(
+          `http://localHost:3000/students/${studentId}/approve`,
+          {
+            subjectId: s.id,
+            teacherId: s.selectedTeacherId,
+            academicYearId: this.student.academic_year_id,
+            semester: this.student.semester,
+            yearLevel: this.student.year_level
+            
+          },
+          {
+            headers: {
+              Authorization:
+                `Bearer ${localStorage.getItem("token")}`
+            }
+          }
+        )
+      }
 
-    await axios.put(
-      `http://localhost:3000/students/${studentId}/approve`,
-      { subjects },
-      { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
-    );
-
-    alert("Enrolled Successfully!");
-    this.selectedSubjects = [];
-    await this.fetchStudentAndSubjects();
-  } catch (err) {
-    console.error("Enrollment failed:", err.response?.data || err);
-    alert("Enrollment Failed!");
-  }
-}
-
-
-
+      alert("Enrolled Successfully!")
+      this.selectedSubjects = []
+      await this.fetchStudentAndSubjects()
+    } catch (err) {
+      console.error("Enrollment Failed:", err.response?.data || err)
+      alert("enrollment Failed")
+    }
   },
+  }
 };
 </script>
