@@ -56,6 +56,7 @@ export default{
         '/dashboard/admin/reports',
         // STUDENT ENROLLMENT PAGE
         '/student-enrollment',
+        '/student-enrollment/student',
         '/admin/enrollments',
         // APPROVAL PAGE
         '/admin/approval/teachers',

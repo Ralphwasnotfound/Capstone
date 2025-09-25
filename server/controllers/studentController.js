@@ -170,10 +170,10 @@ export const approveStudent = async (req, res) => {
 };
 
 export const createStudent = async (req, res) => {
-  const { full_name, email, enrollment_type, course_id, year_level, semester , academic_year_id} = req.body;
+  const { full_name, email, enrollment_type, course_id} = req.body;
   const userId = req.user?.id || req.user?.userId;
 
-  if (!full_name || !email || !enrollment_type || !userId || !course_id || !year_level || !semester || !academic_year_id) {
+  if (!full_name || !email || !enrollment_type || !userId || !course_id) {
     return res.status(400).json({ error: 'Missing required fields' });
   }
 
@@ -190,23 +190,20 @@ export const createStudent = async (req, res) => {
     // 2️⃣ First insert student WITHOUT school_id (let id auto increment first)
     const [result] = await studentDB.query(
       `INSERT INTO students 
-        (full_name, email, enrollment_type, user_id, course_id, year_level, status, semester, academic_year_id) 
-       VALUES (?, ?, ?, ?, ?, ?, 'pending',? ,?)`,
-      [full_name, email, enrollment_type, userId, course_id, year_level, semester ,academic_year_id]
+        (full_name, email, enrollment_type, user_id, course_id ,status) 
+      VALUES (?, ?, ?, ?, ?, ?)`,
+      [full_name, email, enrollment_type, userId, course_id, 'inactive']
     );
 
     const newId = result.insertId;
 
-    // 3️⃣ Generate school_id based on insertId (zero-padded)
-    const schoolId = String(newId).padStart(6, "0"); // Example: 000001, 000002
+    const schoolId = String(newId).padStart(6, "0"); 
 
-    // 4️⃣ Update the same student row with the generated school_id
     await studentDB.query(
       `UPDATE students SET school_id = ? WHERE id = ?`,
       [schoolId, newId]
     );
 
-    // 5️⃣ Send response
     res.status(201).json({
       success: true,
       id: newId,
@@ -214,12 +211,9 @@ export const createStudent = async (req, res) => {
       full_name,
       email,
       enrollment_type,
-      status: 'pending',
+      status: 'inactive',
       user_id: userId,
       course_id,
-      year_level,
-      semester,
-      academic_year_id
     });
 
   } catch (err) {
@@ -227,6 +221,25 @@ export const createStudent = async (req, res) => {
     res.status(500).json({ error: 'Insert failed', details: err.message });
   }
 };
+
+export const createEnrollment = async (req, res) => {
+  try {
+    const { student_id, academic_year_id, semester, year_level, subjects } = req.body
+
+    for (const subject_id of subjects) {
+      await studentDB.query(
+        "INSERT INTO enrollments (student_id, subject_id, academic_year_id, semester, year_level, status) VALUES (?, ?, ?, ?, ?, ?)",
+        [student_id, subject_id, academic_year_id, semester, year_level, "pending" ]
+      )
+    }
+
+    res.json({ success:true, message: "Enrollment created successfully" })
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ success: false, error: error.message})
+  }
+}
+
 
 // Enroll a single subject (automatic student detection)
 

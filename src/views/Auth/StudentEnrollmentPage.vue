@@ -1,16 +1,17 @@
 <template>
     <div>
-        <EnrollmentForm/>
+        <CreateStudentForm/>
     </div>
 </template>
 
 <script>
-import EnrollmentForm from '@/components/Forms/Enrollment/EnrollmentForm.vue';
+import CreateStudentForm from '@/components/Forms/Enrollment/CreateStudentForm.vue';
+
 
 
     export default {
         components: {
-            EnrollmentForm,
+            CreateStudentForm,
         },
         data() {
             return {

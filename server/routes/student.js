@@ -17,7 +17,7 @@ const router = express.Router();
 
 // Collection routes
 router.get('/', verifyToken, getStudents);
-router.post('/', verifyToken, createStudent);
+router.post('/create', verifyToken, createStudent);
 
 // Status-based routes
 router.get('/pending', verifyToken, getPendingStudents);
