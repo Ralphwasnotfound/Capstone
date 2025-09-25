@@ -101,7 +101,7 @@ const router = createRouter({
       component: () => import('@/components/Dashboards/Admin/Approval/StudentsApprovalView.vue')
     },
     {
-      path: '/student/:id/subjects',
+      path: '/student/:schoolId/subjects',
       name: 'SubjectSelection',
       component: SubjectSelectionView,
       props: true,

@@ -26,7 +26,7 @@
             :class="index % 2 === 0 ? 'bg-white hover:bg-gray-100' : 'bg-gray-50 hover:bg-gray-100'"
           >
             <td class="p-2">{{ student.full_name || 'N/A' }}</td>
-            <td class="p-2">{{ student.student_id || 'N/A' }}</td>
+            <td class="p-2">{{ student.school_id || 'N/A' }}</td>
             <td class="p-2">{{ student.email || 'N/A' }}</td>
             <td class="p-2">{{ student.status?.trim() || 'Pending' }}</td>
             <td class="p-2">{{ student.enrollment_type || 'N/A' }}</td>
@@ -38,7 +38,7 @@
             <td class="p-2">
               <button
                 v-if="student.status?.toLowerCase() === 'pending'"
-                @click="goToSubjectSelection(student.id)"
+                @click="goToSubjectSelection(student.school_id)"
                 class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
               >
                 Select Subjects
@@ -79,7 +79,7 @@
             :class="index % 2 === 0 ? 'bg-white hover:bg-gray-100' : 'bg-gray-50 hover:bg-gray-100'"
           >
             <td class="p-2">{{ student.full_name || 'N/A' }}</td>
-            <td class="p-2">{{ student.student_id || 'N/A' }}</td>
+            <td class="p-2">{{ student.school_id || 'N/A' }}</td>
             <td class="p-2">{{ student.email || 'N/A' }}</td>
             <td class="p-2">{{ student.status?.trim() || 'Approved' }}</td>
             <td class="p-2">{{ student.enrollment_type || 'N/A' }}</td>
@@ -147,8 +147,8 @@ export default {
         console.error('Failed to fetch enrolled students:', err)
       }
     },
-    goToSubjectSelection(studentId) {
-      this.$router.push(`/student/${studentId}/subjects`)
+    goToSubjectSelection(schoolId) {
+      this.$router.push(`/student/${schoolId}/subjects`)
     }
   },
   mounted() {

@@ -30,8 +30,8 @@ router.get('/subject/:subjectId', verifyToken, getEnrolledStudentsBySubject);
 router.get('/me', verifyToken, getStudentByMe);
 
 // Actions on specific student
-router.put('/:id/approve', verifyToken, approveStudent);
-router.post('/:id/enroll', verifyToken, enrollStudent);
-router.get('/:id', verifyToken, getStudentById);
+router.put('/:schoolId/approve', verifyToken, approveStudent);
+router.post('/:schoolId/enroll', verifyToken, enrollStudent);
+router.get('/:schoolId', verifyToken, getStudentById);
 
 export default router;

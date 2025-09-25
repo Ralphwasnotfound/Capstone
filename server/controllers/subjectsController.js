@@ -104,7 +104,7 @@ export const getSubjectsByCourse = async (req, res) => {
         e.status AS enrollment_status,
         e.semester
       FROM subjects s
-      LEFT JOIN enrollments e ON e.subject_id = s.id AND e.student_id = ?
+      LEFT JOIN enrollments e ON e.subject_id = s.id AND e.school_id= ?
       LEFT JOIN teachers t ON t.id = e.teacher_id
       WHERE s.course_id = ?
     `;

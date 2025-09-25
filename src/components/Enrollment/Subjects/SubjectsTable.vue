@@ -109,11 +109,11 @@ export default {
   methods: {
     async fetchStudentAndSubjects() {
       try {
-        const studentId = this.$route.params.id;
+        const studentSchoolId = this.$route.params.schoolId;
 
         // Fetch student
         const studentRes = await axios.get(
-          `http://localhost:3000/students/${studentId}`,
+          `http://localhost:3000/students/${studentSchoolId}`,
           { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
         );
         this.student = studentRes.data;
@@ -126,7 +126,7 @@ export default {
 
         // Fetch subjects by course
         const subjectsRes = await axios.get(
-          `http://localhost:3000/subjects/course/${this.student.course_id}?studentId=${this.student.id}&year_level=${this.student.year_level}&semester=${this.student.semester || 1}`,
+          `http://localhost:3000/subjects/course/${this.student.course_id}?studentId=${this.student.school_id}&year_level=${this.student.year_level}&semester=${this.student.semester || 1}`,
           { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
         );
 
@@ -171,13 +171,14 @@ export default {
       }
     }
 
-    const studentId = this.$route.params.id
+    const studentSchoolId = this.$route.params.schoolId
 
     try {
       for (const s of this.selectedSubjects) {
         await axios.put(
-          `http://localHost:3000/students/${studentId}/approve`,
+          `http://localhost:3000/students/${studentSchoolId}/approve`,
           {
+            schoolId: this.student.school_id,
             subjectId: s.id,
             teacherId: s.selectedTeacherId,
             academicYearId: this.student.academic_year_id,
