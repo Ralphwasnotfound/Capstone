@@ -28,16 +28,16 @@
             <td class="p-2">{{ student.full_name || 'N/A' }}</td>
             <td class="p-2">{{ student.school_id || 'N/A' }}</td>
             <td class="p-2">{{ student.email || 'N/A' }}</td>
-            <td class="p-2">{{ student.status?.trim() || 'Pending' }}</td>
+            <td class="p-2">{{ student.status?.toLowerCase() === 'pending' ? 'Pending' : 'N/A' }}</td>
             <td class="p-2">{{ student.enrollment_type || 'N/A' }}</td>
-            <td class="p-2">{{ student.course }}</td>
+            <td class="p-2">{{ student.course || 'N/A' }}</td>
             <td class="p-2">{{ formatYearLevel(student.year_level) }}</td>
             <td class="p-2">{{ student.semester || 'N/A' }}</td>
             <td class="p-2">{{ student.academic_year || 'N/A' }}</td>
             <td class="p-2">{{ formatDate(student.created_at) }}</td>
             <td class="p-2">
               <button
-                v-if="student.enrollment_status?.toLowerCase() === 'pending'"
+                v-if="student.status?.toLowerCase() === 'pending'"
                 @click="goToSubjectSelection(student.school_id)"
                 class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
               >
@@ -47,7 +47,7 @@
             </td>
           </tr>
           <tr v-if="pendingStudents.length === 0">
-            <td colspan="10" class="text-center py-4">No pending students</td>
+            <td colspan="11" class="text-center py-4">No pending students</td>
           </tr>
         </tbody>
       </table>
@@ -81,17 +81,19 @@
             <td class="p-2">{{ student.full_name || 'N/A' }}</td>
             <td class="p-2">{{ student.school_id || 'N/A' }}</td>
             <td class="p-2">{{ student.email || 'N/A' }}</td>
-            <td class="p-2">{{ student.status?.trim() || 'Approved' }}</td>
+            <td class="p-2">{{ student.status?.toLowerCase() === 'enrolled' ? 'Approved' : student.status }}</td>
             <td class="p-2">{{ student.enrollment_type || 'N/A' }}</td>
-            <td class="p-2">{{ student.course }}</td>
+            <td class="p-2">{{ student.course || 'N/A' }}</td>
             <td class="p-2">{{ formatYearLevel(student.year_level) }}</td>
             <td class="p-2">{{ student.semester || 'N/A' }}</td>
             <td class="p-2">{{ student.academic_year || 'N/A' }}</td>
-            <td class="p-2">{{ formatDate(student.created_at) }}</td>
-            <td class="p-2 text-green-600 font-semibold">Approved</td>
+            <td class="p-2">{{ formatDate(student.date_enrolled) }}</td>
+            <td class="p-2 text-green-600 font-semibold">
+              {{ student.status?.toLowerCase() === 'enrolled' ? 'Approved' : 'N/A' }}
+            </td>
           </tr>
           <tr v-if="enrolledStudents.length === 0">
-            <td colspan="10" class="text-center py-4">No enrolled students</td>
+            <td colspan="11" class="text-center py-4">No enrolled students</td>
           </tr>
         </tbody>
       </table>
@@ -134,20 +136,23 @@ export default {
     async loadPendingStudents() {
       try {
         const res = await fetchPendingStudents()
-        this.pendingStudents = res.success ? res.data : []
+        if (res.success) {
+          this.pendingStudents = res.data.filter(s => s.status?.trim() === 'pending')
+        }else {
+          this.pendingStudents = []
+        }
       } catch (err) {
         console.error('Failed to fetch pending students:', err)
       }
     },
     async loadEnrolledStudents() {
-  try {
-    const res = await fetchEnrolledStudents();
-    this.enrolledStudents = res.success ? res.data : [];
-  } catch (err) {
-    console.error('Failed to fetch enrolled students:', err);
-  }
-},
-
+      try {
+        const res = await fetchEnrolledStudents()
+        this.enrolledStudents = res.success ? res.data : []
+      } catch (err) {
+        console.error('Failed to fetch enrolled students:', err)
+      }
+    },
     goToSubjectSelection(schoolId) {
       this.$router.push(`/student/${schoolId}/subjects`)
     }
