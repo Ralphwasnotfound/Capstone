@@ -188,11 +188,13 @@ export const approveStudent = async (req, res) => {
     );
 
     await studentDB.query(
-      'UPDATE pending_students SET status="approved" WHERE id=?',
-      [studentId]
-    );
-
-    
+  `UPDATE pending_students 
+   SET status = "approved" 
+   WHERE school_id = ? 
+     AND semester IN ('1st', '2nd') 
+     AND status = 'pending'`,
+  [schoolId]
+);
 
     res.json({ success: true, message: "Student approved and enrolled successfully" });
   } catch (err) {
@@ -200,9 +202,6 @@ export const approveStudent = async (req, res) => {
     res.status(500).json({ success: false, error: "Failed to approve/enroll student" });
   }
 };
-
-
-
 
 export const createStudent = async (req, res) => {
   const { full_name, email, enrollment_type, course_id } = req.body;
@@ -405,17 +404,17 @@ export const getEnrolledStudents = async (req, res) => {
          s.status, 
          s.enrollment_type, 
          c.name AS course,
-         MIN(e.semester) AS semester,
+         e.semester,
          MIN(e.year_level) AS year_level,
-         MIN(e.academic_year_id) AS academic_year_id,
-         MIN(ay.year) AS academic_year,
+         e.academic_year_id,
+         ay.year AS academic_year,
          MIN(e.created_at) AS date_enrolled
        FROM students s
        JOIN courses c ON s.course_id = c.id
        JOIN enrollments e ON e.school_id = s.school_id AND e.status = 'enrolled'
        LEFT JOIN academic_years ay ON ay.id = e.academic_year_id
        WHERE s.status IN ('enrolled', 'active')
-       GROUP BY s.id, s.school_id, s.full_name, s.email, s.status, s.enrollment_type, c.name`
+       GROUP BY s.id, s.school_id, s.full_name, s.email, s.status, s.enrollment_type, c.name, e.semester, e.academic_year_id, ay.year`
     );
 
     const data = students.map(student => ({
@@ -432,6 +431,7 @@ export const getEnrolledStudents = async (req, res) => {
     res.status(500).json({ success: false, message: err.message });
   }
 };
+
 
 
 // GET /teachers/:teacherId/subjects/:subjectId/students

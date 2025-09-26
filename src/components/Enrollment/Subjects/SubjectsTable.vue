@@ -147,41 +147,51 @@ export default {
       }
     },
     async confirmEnrollment() {
-      if (!this.selectedSubjects.length) return alert("No subjects selected!");
+  if (!this.selectedSubjects.length) return alert("No subjects selected!");
 
-      // Validate teacher selection
-      for (const subj of this.selectedSubjects) {
-        if (!subj.selectedTeacherId) {
-          return alert(`Please select a teacher for ${subj.name}`);
-        }
-      }
+  // Get fallbacks for required fields
+  const academicYearId = this.student.academic_year_id || this.student.activeYear?.id;
+  const semester = this.student.semester || this.student.activeYear?.semester || "1st";
+  const yearLevel = this.student.year_level || 1;
 
-      const payload = {
-        schoolId: this.student.school_id,
-        subjects: this.selectedSubjects.map(s => ({
-          subjectId: s.id,
-          teacherId: s.selectedTeacherId,
-          academicYearId: this.student.academic_year_id,
-          semester: this.student.semester,
-          yearLevel: this.student.year_level
-        }))
-      };
+  if (!academicYearId) {
+    return alert("Cannot enroll: Missing academic year. Please contact admin.");
+  }
 
-      try {
-        await axios.put(
-          `http://localhost:3000/students/${this.student.school_id}/approve`,
-          payload,
-          { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
-        );
-
-        alert("Enrolled Successfully!");
-        this.selectedSubjects = [];
-        await this.fetchStudentAndSubjects();
-      } catch (err) {
-        console.error("Enrollment Failed:", err.response?.data || err);
-        alert("Enrollment Failed. Please check the console for details.");
-      }
+  // Validate teacher selection
+  for (const subj of this.selectedSubjects) {
+    if (!subj.selectedTeacherId) {
+      return alert(`Please select a teacher for ${subj.name}`);
     }
+  }
+
+  const payload = {
+    schoolId: this.student.school_id,
+    subjects: this.selectedSubjects.map(s => ({
+      subjectId: s.id,
+      teacherId: s.selectedTeacherId,
+      academicYearId,
+      semester,
+      yearLevel
+    }))
+  };
+
+  try {
+    await axios.put(
+      `http://localhost:3000/students/${this.student.school_id}/approve`,
+      payload,
+      { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
+    );
+
+    alert("Enrolled Successfully!");
+    this.selectedSubjects = [];
+    await this.fetchStudentAndSubjects();
+  } catch (err) {
+    console.error("Enrollment Failed:", err.response?.data || err);
+    alert("Enrollment Failed. Please check the console for details.");
+  }
+}
+
   }
 };
 </script>
