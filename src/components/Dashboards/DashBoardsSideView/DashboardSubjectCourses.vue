@@ -24,36 +24,39 @@
         Enrollment Closed – Wait for the next semester
       </button>
 
-      <!-- Semester-specific buttons -->
+      <!-- Enrollment button for active semester -->
       <div v-else>
-        <div v-for="sem in ['1st', '2nd']" :key="sem" class="mb-2">
-          <button
-            v-if="semesterStatus[sem] === 'pending'"
-            disabled
-            class="bg-yellow-500 text-white font-semibold px-6 py-3 rounded-xl shadow-lg w-full"
-          >
-            Enrollment Pending – {{ sem }} Semester
-          </button>
+        <button
+          v-if="semesterStatus[activeYear.semester] === 'pending'"
+          disabled
+          class="bg-yellow-500 text-white font-semibold px-6 py-3 rounded-xl shadow-lg w-full"
+        >
+          Enrollment Pending – {{ activeYear.semester }} Semester
+        </button>
 
-          <button
-            v-else-if="semesterStatus[sem] === 'enrolled'"
-            disabled
-            class="bg-green-500 text-white font-semibold px-6 py-3 rounded-xl shadow-lg w-full"
-          >
-            ✅ Enrolled – {{ sem }} Semester
-          </button>
+        <button
+          v-else-if="semesterStatus[activeYear.semester] === 'enrolled'"
+          disabled
+          class="bg-green-500 text-white font-semibold px-6 py-3 rounded-xl shadow-lg w-full"
+        >
+          ✅ Enrolled – {{ activeYear.semester }} Semester
+        </button>
 
-          <router-link v-else :to="`/student-enrollment?semester=${sem}`">
-            <button
-              class="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-6 py-3 rounded-xl shadow-lg w-full"
-            >
-              Enroll Now – {{ sem }} Semester
-            </button>
-          </router-link>
-        </div>
+        <router-link
+          v-else
+          :to="student?.school_id
+            ? `/student-enrollment/student?semester=${activeYear.semester}`
+            : `/student-enrollment?semester=${activeYear.semester}`"
+        >
+          <button
+            class="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-6 py-3 rounded-xl shadow-lg w-full"
+          >
+            Enroll Now – {{ activeYear.semester }} Semester
+          </button>
+        </router-link>
       </div>
 
-      <!-- Show subjects after enrolled in any semester -->
+      <!-- Show subjects after enrolled -->
       <SubjectsCourses v-if="subjects.length" :subjects="subjects" />
     </div>
   </div>
@@ -75,7 +78,8 @@ export default {
       activeYear: null,
       loading: true,
       studentFound: true,
-      subjects:[]
+      student: null,
+      subjects: []
     };
   },
   methods: {
@@ -85,23 +89,21 @@ export default {
       this.academicYearActive = false;
       this.activeYear = null;
       this.studentFound = true;
-   
+      this.student = null;
+      this.subjects = [];
 
       try {
-        // 1️⃣ Get active academic year
+        // 1️⃣ Fetch active academic year
         const resYear = await fetchActiveAcademicYear();
         if (resYear.success && resYear.data) {
           this.activeYear = resYear.data;
           this.academicYearActive = resYear.data.is_active === 1;
         }
 
-        // 2️⃣ Get student with subjects/enrollments using plain axios
+        // 2️⃣ Fetch current student
         const token = localStorage.getItem('token');
         const resStudent = await axios.get('http://localhost:3000/students/me', {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
+          headers: { Authorization: `Bearer ${token}` },
         });
 
         if (!resStudent.data.success || !resStudent.data.data) {
@@ -110,30 +112,39 @@ export default {
         }
 
         const student = resStudent.data.data;
+        this.student = student;
 
-        if (student.subjects) {
+        // 3️⃣ Save subjects if enrolled
+        if (student.subjects?.length) {
           this.subjects = student.subjects
-          .filter(sub => sub.enrollment_status)
-          .map(sub => ({
-            ...sub,
-            semester: sub.semester || 'N/A',
-            enrollment_status: sub.enrollment_status || 'pending'
-          }))
+            .filter(sub => sub.enrollment_status)
+            .map(sub => ({
+              ...sub,
+              semester: sub.semester || 'N/A',
+              enrollment_status: sub.enrollment_status || 'pending',
+            }));
 
-          for (const sub of this.subjects) {
-            const sem = sub.semester
-            if (!this.semesterStatus[sem] || this.semesterStatus[sem] !== 'enrolled') {
-              this.semesterStatus[sem] = sub.enrollment_status
+          // Build semesterStatus
+          this.subjects.forEach(sub => {
+            const sem = sub.semester;
+            if (['1st', '2nd'].includes(sem) && this.semesterStatus[sem] !== 'enrolled') {
+              this.semesterStatus[sem] = sub.enrollment_status;
             }
-          }
+          });
         }
+
+        // Ensure active semester has a status if student exists
+        if (!this.semesterStatus[this.activeYear.semester]) {
+          this.semesterStatus[this.activeYear.semester] = 'none';
+        }
+
       } catch (err) {
         console.error('Error loading student status:', err.response?.data || err.message);
         this.studentFound = false;
       } finally {
         this.loading = false;
       }
-    },
+    }
   },
   mounted() {
     if (this.role === 'student') {
@@ -141,7 +152,6 @@ export default {
     } else {
       this.loading = false;
     }
-  },
+  }
 };
-
 </script>

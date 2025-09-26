@@ -63,80 +63,79 @@ export const getStudentById = async (req, res) => {
   }
 };
 
+
+// controllers/studentController.js
 export const getStudentByMe = async (req, res) => {
   const userId = req.user?.id || req.user?.userId;
-  if (!userId) return res.status(401).json({ success: false, message: 'Unauthorized' });
+  if (!userId) {
+    return res.status(401).json({ success: false, message: 'Unauthorized' });
+  }
 
   try {
-    // 1️⃣ Get the student by logged-in user
+    // 1️⃣ Get student
     const [studentRows] = await studentDB.query(
-      'SELECT * FROM students WHERE user_id = ? ORDER BY created_at ASC LIMIT 1',
+      'SELECT * FROM students WHERE user_id = ? LIMIT 1',
       [userId]
     );
-
-    if (!studentRows.length) 
+    if (!studentRows.length) {
       return res.status(404).json({ success: false, message: 'Student not found' });
-
+    }
     const student = studentRows[0];
 
-    // 2️⃣ Get all enrollments for this student
+    // 2️⃣ Get active academic year
+    const [activeYearRows] = await studentDB.query(
+      'SELECT id, semester, year FROM academic_years WHERE status = "open" ORDER BY created_at DESC LIMIT 1'
+    );
+    const activeYear = activeYearRows.length ? activeYearRows[0] : null;
+
+    // 3️⃣ Get all enrollments for this student
     const [enrollments] = await studentDB.query(
-      `SELECT 
-         e.semester,
-         e.year_level,
-         e.academic_year_id,
-         e.status,
-         ay.year AS academic_year
-       FROM enrollments e
-       LEFT JOIN academic_years ay ON ay.id = e.academic_year_id
-       WHERE e.school_id = ?`,
-      [student.school_id]
+      `SELECT semester, status 
+       FROM enrollments 
+       WHERE school_id = ? AND academic_year_id = ?`,
+      [student.school_id, activeYear?.id || 0]
     );
 
-    // 3️⃣ Build semester-status mapping
-    const semesterStatus = {};
+    // 4️⃣ Build semesterStatus object
+    const semesterStatus = { '1st': 'none', '2nd': 'none' };
     enrollments.forEach(e => {
-      // use 'status' instead of old 'enrollment_status'
-      if (!semesterStatus[e.semester] || semesterStatus[e.semester] !== 'enrolled') {
-        semesterStatus[e.semester] = e.status;
-      }
+      semesterStatus[e.semester] = e.status; // 'pending' or 'enrolled'
     });
 
-    // 4️⃣ Get subjects that are enrolled
+    // 5️⃣ Get enrolled subjects for this student
     const [subjects] = await studentDB.query(
-      `SELECT
+      `SELECT 
          s.id AS subject_id,
          s.name,
          s.code,
          s.units,
          e.semester,
-         e.academic_year_id,
+         e.status AS enrollment_status,
          ay.year AS academic_year
        FROM enrollments e
        JOIN subjects s ON s.id = e.subject_id
        LEFT JOIN academic_years ay ON ay.id = e.academic_year_id
-       WHERE e.school_id = ? AND e.status = 'enrolled'
-       ORDER BY s.name`,
+       WHERE e.school_id = ?`,
       [student.school_id]
     );
 
-    // 5️⃣ Return the cleaned-up student object
+    // 6️⃣ Return combined data
     res.json({
       success: true,
       data: {
         id: student.id,
         full_name: student.full_name,
-        email: student.email,
         school_id: student.school_id,
         enrollment_type: student.enrollment_type,
-        year_level: student.year_level,
         semesterStatus,
-        subjects,
-      },
+        activeYear,
+        subjects: subjects || []
+      }
     });
+
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false, message: 'Database error', error: err.message });
+    console.error('❌ Error in getStudentByMe:', err);
+    res.status(500).json({ success: false, message: err.message });
   }
 };
 
