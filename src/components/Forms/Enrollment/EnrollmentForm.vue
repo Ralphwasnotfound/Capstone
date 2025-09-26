@@ -67,6 +67,8 @@ export default {
 
     await this.loadActiveYear();
     await this.loadStudent();
+    console.log(this.student);
+  console.log(this.form);
   },
   methods: {
     async loadActiveYear() {
@@ -111,12 +113,27 @@ export default {
 
     async handleSubmit() {
       try {
-        const resp = await axios.post('http://localhost:3000/enrollments/create', this.form, {
-          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-        });
+        const payload = {
+          student_id: this.form.student_id,
+          school_id: this.student.school_id,
+          academic_year_id: this.form.academic_year_id,
+          semester: this.form.semester,
+          year_level: Number(this.form.year_level)
+        }
+        const resp = await axios.post(
+          `http://localhost:3000/students/pending`,
+            payload,
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem('token')}`,
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+
         if (resp.data.success) alert('Enrollment submitted!');
       } catch (err) {
-        console.error(err);
+        console.error(err.response?.data || err.message);
         alert('Enrollment failed');
       }
     }

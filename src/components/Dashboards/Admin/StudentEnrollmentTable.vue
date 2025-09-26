@@ -37,7 +37,7 @@
             <td class="p-2">{{ formatDate(student.created_at) }}</td>
             <td class="p-2">
               <button
-                v-if="student.status?.toLowerCase() === 'pending'"
+                v-if="student.enrollment_status?.toLowerCase() === 'pending'"
                 @click="goToSubjectSelection(student.school_id)"
                 class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
               >
@@ -140,13 +140,14 @@ export default {
       }
     },
     async loadEnrolledStudents() {
-      try {
-        const res = await fetchEnrolledStudents()
-        this.enrolledStudents = res.success ? res.data : []
-      } catch (err) {
-        console.error('Failed to fetch enrolled students:', err)
-      }
-    },
+  try {
+    const res = await fetchEnrolledStudents();
+    this.enrolledStudents = res.success ? res.data : [];
+  } catch (err) {
+    console.error('Failed to fetch enrolled students:', err);
+  }
+},
+
     goToSubjectSelection(schoolId) {
       this.$router.push(`/student/${schoolId}/subjects`)
     }

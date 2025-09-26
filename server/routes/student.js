@@ -6,11 +6,12 @@ import {
   createStudent,
   getEnrolledStudents,
   getPendingStudents,
+  createPendingStudents,
   getStudentById,
   enrollStudent,
   approveStudent,
   getStudentByMe,
-  getEnrolledStudentsBySubject // <-- new
+  getEnrolledStudentsBySubject
 } from '../controllers/studentController.js';
 
 const router = express.Router();
@@ -21,6 +22,7 @@ router.post('/create', verifyToken, createStudent);
 
 // Status-based routes
 router.get('/pending', verifyToken, getPendingStudents);
+router.post('/pending', verifyToken, createPendingStudents);
 router.get('/enrolled', verifyToken, getEnrolledStudents);
 
 // New route: students of a specific subject
@@ -31,7 +33,7 @@ router.get('/me', verifyToken, getStudentByMe);
 
 // Actions on specific student
 router.put('/:schoolId/approve', verifyToken, approveStudent);
-router.post('/:schoolId/enroll', verifyToken, enrollStudent);
+router.post('/enroll', verifyToken, enrollStudent);
 router.get('/:schoolId', verifyToken, getStudentById);
 
 export default router;
