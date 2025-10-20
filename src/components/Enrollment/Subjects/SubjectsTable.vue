@@ -106,7 +106,7 @@ export default {
     },
     addToSelection(subject) {
       if (!this.isSelected(subject.id)) {
-        this.selectedSubjects.push(subject);
+        this.selectedSubjects.push({ ...subject});
       }
     },
     async fetchStudentAndSubjects() {
@@ -146,10 +146,9 @@ export default {
         console.error("Fetch teachers failed:", err);
       }
     },
-    async confirmEnrollment() {
+async confirmEnrollment() {
   if (!this.selectedSubjects.length) return alert("No subjects selected!");
 
-  // Get fallbacks for required fields
   const academicYearId = this.student.academic_year_id || this.student.activeYear?.id;
   const semester = this.student.semester || this.student.activeYear?.semester || "1st";
   const yearLevel = this.student.year_level || 1;
@@ -158,7 +157,7 @@ export default {
     return alert("Cannot enroll: Missing academic year. Please contact admin.");
   }
 
-  // Validate teacher selection
+  // Validate teacher selection before sending
   for (const subj of this.selectedSubjects) {
     if (!subj.selectedTeacherId) {
       return alert(`Please select a teacher for ${subj.name}`);
@@ -177,20 +176,30 @@ export default {
   };
 
   try {
-    await axios.put(
+    const res = await axios.put(
       `http://localhost:3000/students/${this.student.school_id}/approve`,
       payload,
       { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
     );
 
-    alert("Enrolled Successfully!");
+    if (res.status === 207 || (res.data.failedSubjects?.length > 0)) {
+      console.warn("Some subjects failed:", res.data.failedSubjects);
+      alert(
+        `Enrollment completed, but ${res.data.failedSubjects.length} subjects failed. Check console for details.`
+      );
+    } else {
+      alert("Enrolled Successfully!");
+    }
+
     this.selectedSubjects = [];
     await this.fetchStudentAndSubjects();
+
   } catch (err) {
     console.error("Enrollment Failed:", err.response?.data || err);
-    alert("Enrollment Failed. Please check the console for details.");
+    alert("Enrollment Failed. Check console for details.");
   }
 }
+
 
   }
 };

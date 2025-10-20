@@ -10,7 +10,7 @@ import {
 const router = express.Router();
 
 router.get('/terms', verifyToken, getTerms)      // fetch semesters
-router.get('/academic-years', verifyToken, getAcademicYears)      // fetch semesters
+router.get('/academicYears', verifyToken, getAcademicYears)      // fetch semesters
   // add new semester
 router.post('/create/academic-years', verifyToken, createAcademicYear)   // add new semester
 
