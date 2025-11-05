@@ -114,41 +114,102 @@ export const getStudentsBySubject = async (req, res) => {
   }
 };
 
-
+// ✅ Get all grades for a specific student (using enrollments)
 export const getGradesByStudent = async (req, res) => {
-  const studentId = req.params.id;
-  console.log("Fetching grades for studentId:", studentId);
-
-  if (!studentId) {
-    return res.status(400).json({ success: false, error: "Student ID is required" });
-  }
+  const { id } = req.params; // student ID
 
   try {
     const [rows] = await studentDB.query(`
       SELECT 
-        e.id AS enrollment_id,
-        s.name AS subject_name,
-        g.grade,
-        g.remarks,
-        st.id AS student_id
+        e.subject_id,
+        sub.name AS subject_name,
+        e.teacher_id,
+        t.full_name AS teacher_name,
+        IFNULL(g.grade, NULL) AS grade,
+        IFNULL(g.remarks, '') AS remarks,
+        e.academic_year_id,
+        ay.year AS academic_year,
+        ay.semester
       FROM enrollments e
-      JOIN subjects s ON s.id = e.subject_id
-      JOIN students st ON st.id = e.student_id
+      JOIN subjects sub ON e.subject_id = sub.id
+      LEFT JOIN teachers t ON e.teacher_id = t.id
       LEFT JOIN grades g 
-        ON g.student_id = e.student_id
+        ON g.student_id = e.student_id 
         AND g.subject_id = e.subject_id
+        AND g.academic_year_id = e.academic_year_id
+      LEFT JOIN academic_years ay ON e.academic_year_id = ay.id
       WHERE e.student_id = ?
-      ORDER BY s.name
-    `, [studentId]);
-
-    console.log("Query result:", rows);
+    `, [id]);
 
     res.json({ success: true, data: rows });
-  } catch (error) {
-    console.error("Error fetching grades:", error);
+  } catch (err) {
+    console.error("Error fetching student grades:", err);
     res.status(500).json({ success: false, error: "Failed to fetch grades" });
   }
 };
 
 
+export const getStudentGradeBySubject = async (req, res) => {
+  const {studentId, subjectId} = req.params
 
+  if (!studentId || !subjectId) {
+    return res.status(400).json({ success: false, error: "Student ID and Subject ID are required"})
+  }
+
+  try {
+    const [rows] = await studentDB.query(`
+      SELECT 
+        s.name AS subject_name,
+        g.grade,
+        g.remarks,
+        g.academic_year_id,
+        g.teacher_id
+      FROM grades g
+      JOIN subjects s ON s.id = g.subject_id
+      WHERE g.student_id = ? AND g.subject_id = ?
+      `, [studentId, subjectId])
+
+      if (rows.length === 0) {
+        return res.json({ success: true, data: null, message: "No grade found yet" })
+      }
+
+      res.json({ success: true, data: rows[0] })
+  } catch (err) {
+    console.error("Error fetching specific grade:", err)
+    res.status(500).json({success: false, error: "Failed to fetch  grade"})
+  }
+}
+
+
+export const bulkUpdateGrades = async (req, res) => {
+  const { grades } = req.body;
+
+  if (!grades || !Array.isArray(grades) || grades.length === 0) {
+    return res.status(400).json({ success: false, error: 'No grades provided' });
+  }
+
+  try {
+    for (const g of grades) {
+      const { student_id, subject_id, teacher_id, grade, remarks, academic_year_id } = g;
+      if (!student_id || !subject_id || !teacher_id || grade === undefined || !academic_year_id) {
+        continue;
+      }
+
+      await studentDB.query(
+        `
+        INSERT INTO grades (student_id, subject_id, teacher_id, grade, remarks, academic_year_id)
+        VALUES (?, ?, ?, ?, ?, ?)
+        ON DUPLICATE KEY UPDATE
+          grade = VALUES(grade),
+          remarks = VALUES(remarks)
+        `,
+        [student_id, subject_id, teacher_id, grade, remarks, academic_year_id]
+      );
+    }
+
+    res.json({ success: true, message: 'All grades saved successfully' });
+  } catch (err) {
+    console.error('Bulk update error:', err);
+    res.status(500).json({ success: false, error: 'Failed to save grades' });
+  }
+};

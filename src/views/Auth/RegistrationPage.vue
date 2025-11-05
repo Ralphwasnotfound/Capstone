@@ -1,53 +1,39 @@
 <template>
-    <div class="flex min-h-screen">
-    <!-- Left side: Logo -->
-        <div class="w-1/2 flex justify-center items-center">
-            <img src="@/assets/img/Logo.png" alt="Logo" class="w-full max-w-xs" />
-        </div>
+  <div class="flex items-center justify-center min-h-screen bg-gray-100">
+    <div class="flex flex-col md:flex-row items-center justify-center gap-16 w-full max-w-5xl px-4">
+      <!-- Logo -->
+      <div class="flex justify-center items-center flex-1">
+        <img src="@/assets/img/Logo.png" alt="Logo" class="w-64 md:w-80" />
+      </div>
 
-        <div class="w-1/2 flex flex-col justify-center items-center gap-4">
-            <div class="flex gap-4">
-                <button 
-                class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-                @click="goTo('student')">
-                    Register as a Student
-                </button>
-
-                <button
-                class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
-                @click="goTo('teacher')"
-                >
-                Register as a Teacher
-                </button>
-            </div>
-        </div>
-        <RouterView/> 
+      <!-- Registration form -->
+      <div class="flex-1 max-w-md w-full">
+        <StudentRegister />
+      </div>
     </div>
+  </div>
 </template>
 
-
 <script>
-import { RouterView } from 'vue-router';
+import StudentRegister from '@/components/Forms/Registration/StudentRegister.vue';
 
-
-
-export default{
-    components: {
-        RouterView
+export default {
+  components: {
+    StudentRegister,
+  },
+  data() {
+    return {
+      activeForm: null,
+    };
+  },
+  methods: {
+    goTo(type) {
+      if (type === 'student') {
+        this.$router.push('/register/student');
+      } else if (type === 'teacher') {
+        this.$router.push('/register/teacher');
+      }
     },
-    data(){
-        return {
-            activeForm: null
-        }
-    },
-    methods: {
-        goTo(type) {
-            if (type === 'student') {
-                this.$router.push('/register/student')
-            }else if (type === 'teacher'){
-                this.$router.push('/register/teacher')
-            }
-        }
-    }
-}
+  },
+};
 </script>

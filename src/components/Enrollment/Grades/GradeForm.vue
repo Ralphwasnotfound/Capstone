@@ -49,7 +49,7 @@ export default {
       }
 
       const payload = {
-        student_id: this.student.id,
+        student_id: this.student.school_id,
         teacher_id: this.teacherId,
         subject_id: this.subjectId,
         grade: this.localGrade,

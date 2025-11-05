@@ -37,10 +37,8 @@ app.use(cors({
                     app.use(express.urlencoded({ extended: true }))
                     app.use(morgan('dev'))
 
-
-
                     // Routes
-                    app.use('/students', verifyToken, studentRoutes)
+                    app.use('/students', studentRoutes)
                     app.use('/users', userRoutes)
                     app.use('/grades', gradesRoutes)
                     app.use('/subjects', subjectsRoutes)

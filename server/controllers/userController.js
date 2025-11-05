@@ -1,13 +1,19 @@
 import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
 import { userDB } from '../db.js' 
+import { studentDB } from '../db.js';
 
 export const registerUser = async (req, res) => {
-    const { full_name, email, password ,role = 'student', contact } = req.body
+    const { full_name, email, password, role = 'student', contact } = req.body
 
     // VALID INPUT
     if (!full_name || !email || !password) {
-        return res.status(400).json({ error: 'all fields are required'})
+        return res.status(400).json({ error: 'All fields are required' })
+    }
+
+    //  Prevent self-registration as teacher
+    if (role === 'teacher') {
+        return res.status(403).json({ error: 'Teacher registration is restricted to admin only.' })
     }
 
     try {
@@ -18,15 +24,92 @@ export const registerUser = async (req, res) => {
 
         const hashedPassword = await bcrypt.hash(password, 10)
 
+        //  Students can register directly
         await userDB.query(
             'INSERT INTO users (full_name, email, password, role, contact) VALUES (?, ?, ?, ?, ?)',
             [full_name, email, hashedPassword, role, contact]
         )
-        
-        res.status(201).json({ message: 'Registration Successful'})
+
+        res.status(201).json({ message: 'Registration Successful' })
     } catch (err) {
-        console.error('Registration Error:',err)
+        console.error('Registration Error:', err)
         res.status(500).json({ error: 'Server Error' })
+    }
+}
+
+export const createTeacherByAdmin = async (req, res) => {
+  console.log("Incoming body:", req.body)
+
+  const { email } = req.body
+
+  if (!email) {
+    return res.status(400).json({ error: 'Email is required' })
+  }
+
+  try {
+    // Check if email already exists in users
+    const [existing] = await userDB.query('SELECT * FROM users WHERE email = ?', [email])
+    if (existing.length > 0) {
+      return res.status(409).json({ error: 'Email already exists' })
+    }
+
+    // Default password
+    const defaultPassword = 'Changeme123'
+    const hashedPassword = await bcrypt.hash(defaultPassword, 10)
+
+    // Insert into users
+    const [userResult] = await userDB.query(
+      `INSERT INTO users (full_name, email, password, role)
+       VALUES (?, ?, ?, 'teacher')`,
+      ['Pending Name', email, hashedPassword]
+    )
+
+    const userId = userResult.insertId
+
+    // Insert into teachers (registration DB)
+    await userDB.query(
+      `INSERT INTO teachers (user_id, full_name, email, specialization, status)
+       VALUES (?, ?, ?, ?,'approved')`,
+      [userId, 'Pending Name',email, 'Not Set']
+    )
+
+    // Automatically insert into enrollment_system.teachers
+    await studentDB.query(
+      `INSERT INTO teachers (full_name, email, specialization, contact, status, credential_url, id_url)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      ['Pending Name', email, 'Not Set', null, 'approved', null, null]
+    )
+
+    res.json({
+      success: true,
+      message: 'Teacher created and synced to enrollment system!',
+      defaultPassword,
+    })
+  } catch (err) {
+    console.error('Admin create teacher error:', err)
+    res.status(500).json({ error: 'Server error creating teacher' })
+  }
+}
+
+export const changePassword = async (req, res) => {
+    const { userId, currentPassword, newPassword } = req.body
+
+    try {
+        const [rows] = await userDB.query('SELECT * FROM users WHERE id = ?', [userId])
+        if (!rows.length) return res.status(404).json({ error:'User not found'})
+
+        const user = rows[0]
+        const isMatch = await bcrypt.compare(currentPassword, user.password)
+        if (!isMatch) 
+            return res.status(400).json({ error:'Current password is incorrect'})
+
+        const hashedNew = await bcrypt.hash(newPassword, 10)
+        await userDB.query('UPDATE users SET PASSWORD = ? WHERE id = ?', [hashedNew, userId])
+
+        res.json({ success: true, message: 'Password changed successfully'})
+    } catch (err) {
+        console.error('Changed password error:', err)
+        res.status(500).json({ error: 'Server error changing password' })
     }
 }
 
@@ -86,7 +169,6 @@ export const loginUser = async (req, res) => {
     }
 }
 
-
 export const getUsers = async (req, res) => {
     try {
         const [users] = await userDB.query(`
@@ -141,7 +223,6 @@ export const createDefaultAdmin = async () => {
         console.log('Default admin already exists')
     }
 }
-
 
 // DELETE USERS
 export const deleteUser = async ( req , res ) => {

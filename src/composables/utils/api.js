@@ -252,5 +252,32 @@ export async function deleteAcademicYear(id) {
   }
 }
 
+// Fetch all subjects for a student
+export const fetchStudentSubjects = async (studentId) => {
+  try {
+    const res = await axios.get(`http://localhost:3000/students/${studentId}/subjects`, {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    })
+    return res.data
+  } catch (err) {
+    console.error("Error fetching subjects:", err)
+    return { success: false, data: [] }
+  }
+}
+
+// Fetch grade for a specific subject
+export const fetchStudentGradeForSubject = async (studentId, subjectId) => {
+  try {
+    const res = await axios.get(`http://localhost:3000/grades/students/${studentId}/subjects/${subjectId}`, {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    })
+    return res.data
+  } catch (err) {
+    console.error("Error fetching grade:", err)
+    return { success: false, data: null }
+  }
+}
+
+
 
 export default api

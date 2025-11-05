@@ -190,14 +190,14 @@ export const approveStudent = async (req, res) => {
       try {
         await studentDB.query(
           `INSERT INTO enrollments (
-             student_id, school_id, subject_id, teacher_id, academic_year_id, semester, year_level, status
-           ) VALUES (?, ?, ?, ?, ?, ?, ?, 'enrolled')
-           ON DUPLICATE KEY UPDATE
-             status='enrolled',
-             year_level=VALUES(year_level),
-             teacher_id=VALUES(teacher_id),
-             academic_year_id=VALUES(academic_year_id),
-             semester=VALUES(semester)`,
+            student_id, school_id, subject_id, teacher_id, academic_year_id, semester, year_level, status
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, 'enrolled')
+          ON DUPLICATE KEY UPDATE
+            status='enrolled',
+            year_level=VALUES(year_level),
+            teacher_id=VALUES(teacher_id),
+            academic_year_id=VALUES(academic_year_id),
+            semester=VALUES(semester)`,
           [studentId, schoolId, subjectId, teacherId, activeYearId, semester, yearLevel]
         );
       } catch (err) {
@@ -233,9 +233,7 @@ export const approveStudent = async (req, res) => {
   }
 };
 
-
 // controllers/studentController.js
-
 
 export const createStudent = async (req, res) => {
   const { full_name, email, enrollment_type, course_id } = req.body;
@@ -259,7 +257,7 @@ export const createStudent = async (req, res) => {
     const [result] = await studentDB.query(
       `INSERT INTO students 
         (full_name, email, school_id, enrollment_type, user_id, course_id, status) 
-       VALUES (?, ?, NULL, ?, ?, ?, 'pending')`,
+        VALUES (?, ?, NULL, ?, ?, ?, 'pending')`,
       [full_name, email, enrollment_type, userId, course_id]
     );
 
@@ -353,32 +351,32 @@ export const getPendingStudents = async (req, res) => {
     // 1️⃣ Get active academic year (optional, for fallback)
     const [activeYearRows] = await studentDB.query(
       `SELECT id, semester, year 
-       FROM academic_years 
-       WHERE status = "open" 
-       ORDER BY created_at DESC 
-       LIMIT 1`
+        FROM academic_years 
+        WHERE status = "open" 
+        ORDER BY created_at DESC 
+        LIMIT 1`
     );
     const activeYear = activeYearRows.length ? activeYearRows[0] : null;
 
     // 2️⃣ Get pending students from pending_students table
     const [students] = await studentDB.query(
       `SELECT 
-         ps.id AS pending_id,
-         ps.student_id,
-         ps.school_id,
-         ps.academic_year_id,
-         ps.semester,
-         ps.year_level,
-         ps.status,
-         ps.created_at,
-         s.full_name,
-         s.email,
-         s.enrollment_type,
-         c.name AS course
-       FROM pending_students ps
-       JOIN students s ON s.id = ps.student_id
-       LEFT JOIN courses c ON s.course_id = c.id
-       ORDER BY ps.created_at DESC`
+          ps.id AS pending_id,
+          ps.student_id,
+          ps.school_id,
+          ps.academic_year_id,
+          ps.semester,
+          ps.year_level,
+          ps.status,
+          ps.created_at,
+          s.full_name,
+          s.email,
+          s.enrollment_type,
+          c.name AS course
+        FROM pending_students ps
+        JOIN students s ON s.id = ps.student_id
+        LEFT JOIN courses c ON s.course_id = c.id
+        ORDER BY ps.created_at DESC`
     );
 
     // 3️⃣ Fill in missing semester/academic year if needed
@@ -408,8 +406,8 @@ export const createPendingStudents = async (req, res) => {
     // insert into pending_students table
     const [result] = await studentDB.query(
       `INSERT INTO pending_students 
-       (student_id, school_id, academic_year_id, semester, year_level, status) 
-       VALUES (?, ?, ?, ?, ?, 'pending')`,
+        (student_id, school_id, academic_year_id, semester, year_level, status) 
+        VALUES (?, ?, ?, ?, ?, 'pending')`,
       [student_id, school_id, academic_year_id, semester, year_level]
     );
 
@@ -431,24 +429,24 @@ export const getEnrolledStudents = async (req, res) => {
 
     const [students] = await studentDB.query(
       `SELECT 
-         s.id,
-         s.school_id, 
-         s.full_name, 
-         s.email, 
-         s.status, 
-         s.enrollment_type, 
-         c.name AS course,
-         e.semester,
-         MIN(e.year_level) AS year_level,
-         e.academic_year_id,
-         ay.year AS academic_year,
-         MIN(e.created_at) AS date_enrolled
-       FROM students s
-       JOIN courses c ON s.course_id = c.id
-       JOIN enrollments e ON e.school_id = s.school_id AND e.status = 'enrolled'
-       LEFT JOIN academic_years ay ON ay.id = e.academic_year_id
-       WHERE s.status IN ('enrolled', 'active')
-       GROUP BY s.id, s.school_id, s.full_name, s.email, s.status, s.enrollment_type, c.name, e.semester, e.academic_year_id, ay.year`
+          s.id,
+          s.school_id, 
+          s.full_name, 
+          s.email, 
+          s.status, 
+          s.enrollment_type, 
+          c.name AS course,
+          e.semester,
+          MIN(e.year_level) AS year_level,
+          e.academic_year_id,
+          ay.year AS academic_year,
+          MIN(e.created_at) AS date_enrolled
+        FROM students s
+        JOIN courses c ON s.course_id = c.id
+        JOIN enrollments e ON e.school_id = s.school_id AND e.status = 'enrolled'
+        LEFT JOIN academic_years ay ON ay.id = e.academic_year_id
+        WHERE s.status IN ('enrolled', 'active')
+        GROUP BY s.id, s.school_id, s.full_name, s.email, s.status, s.enrollment_type, c.name, e.semester, e.academic_year_id, ay.year`
     );
 
     const data = students.map(student => ({
@@ -466,35 +464,59 @@ export const getEnrolledStudents = async (req, res) => {
   }
 };
 
-
-
 // GET /teachers/:teacherId/subjects/:subjectId/students
 export const getEnrolledStudentsBySubject = async (req, res) => {
-  const { subjectId } = req.params;
-  if (!subjectId) {
-    return res.status(400).json({ success: false, message: "Missing subjectId" });
-  }
-
   try {
+    const { subjectId } = req.params;
+    console.log("Fetching students for subjectId:", subjectId);
+
     const [rows] = await studentDB.query(
       `SELECT 
-        st.school_id, 
-        st.full_name,
-        g.id AS grade_id,
-        g.grade,
-        g.remarks,
-        e.teacher_id,
-        e.academic_year_id
-       FROM enrollments e
-       JOIN students st ON st.school_id = e.school_id
-       LEFT JOIN grades g ON g.school_id = st.school_id AND g.subject_id = e.subject_id
-       WHERE e.subject_id = ? AND e.status = 'enrolled'
-       ORDER BY st.full_name`,
+          st.school_id, 
+          st.full_name,
+          g.id AS grade_id,
+          g.grade,
+          g.remarks,
+          e.teacher_id,
+          e.academic_year_id,
+          s.code AS subject_code,
+          s.name AS subject_name
+        FROM enrollments e
+        JOIN students st ON st.school_id = e.school_id
+        JOIN subjects s ON s.id = e.subject_id
+        LEFT JOIN grades g ON g.student_id = st.school_id AND g.subject_id = e.subject_id
+        WHERE e.subject_id = ? AND e.status = 'enrolled'
+        ORDER BY st.full_name`,
       [subjectId]
     );
 
     res.json({ success: true, students: rows });
   } catch (err) {
-    res.status(500).json({ success: false, message: "Database error", error: err });
+    console.error("Error fetching enrolled students:", err);
+    res.status(500).json({ success: false, message: "Database error", error: err.message });
   }
+};
+
+export const getStudentSubjects = async (req, res) => {
+    const studentId = req.params.id;
+    if (!studentId) return res.status(400).json({ success: false, error: "Student ID required" });
+
+    try {
+        const [rows] = await studentDB.query(`
+            SELECT 
+                s.id,
+                s.name,
+                s.code,
+                s.units,
+                s.year_level
+            FROM enrollments e
+            JOIN subjects s ON s.id = e.subject_id
+            WHERE e.student_id = ? AND e.status = 'enrolled'
+        `, [studentId]);
+
+        res.json({ success: true, data: rows });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false, error: "Failed to fetch subjects" });
+    }
 };

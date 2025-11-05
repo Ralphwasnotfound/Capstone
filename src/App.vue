@@ -62,7 +62,9 @@ export default{
         '/admin/approval/teachers',
         '/admin/approval/students',
         // GRADES
-        '/grades/:subjectId'
+        '/grades/:subjectId',
+        //Creating accounts
+        '/dashboard/admin/create-teacher'
       ]
       return hiddenRoutes.includes(this.$route.path) || 
       /^\/grades\/\d+$/.test(this.$route.path) ||         // /grades/:subjectId

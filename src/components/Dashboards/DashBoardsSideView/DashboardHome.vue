@@ -39,6 +39,14 @@
               class="bg-green-500 text-white px-3 py-1 rounded">Students</button>
             </router-link>
           </div>
+
+          <div class="py-2">
+            <router-link to="/dashboard/admin/create-teacher">
+              <button class="bg-purple-500 text-white px-3 py-1 rounded">
+                Create Teacher
+              </button>
+            </router-link>
+          </div>
         </div>
       </div>
     </div>

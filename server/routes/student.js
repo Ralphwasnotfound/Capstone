@@ -13,6 +13,7 @@ import {
   getStudentByMe,
   getEnrolledStudentsBySubject
 } from '../controllers/studentController.js';
+import { getStudentGradeBySubject } from '../controllers/gradesController.js';
 
 const router = express.Router();
 
@@ -26,10 +27,11 @@ router.post('/pending', verifyToken, createPendingStudents);
 router.get('/enrolled', verifyToken, getEnrolledStudents);
 
 // New route: students of a specific subject
-router.get('/subject/:subjectId', verifyToken, getEnrolledStudentsBySubject);
+router.get('/subject/:subjectId', getEnrolledStudentsBySubject);
 
 // Authenticated user’s student record
 router.get('/me', verifyToken, getStudentByMe);
+router.get('/:id/subjects', getStudentGradeBySubject)
 
 // Actions on specific student
 router.put('/:schoolId/approve', verifyToken, approveStudent);

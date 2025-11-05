@@ -72,11 +72,23 @@ const router = createRouter({
       name:'register-teacher',
       component: () => import('@/components/Forms/Registration/TeacherRegister.vue')
     },
+    //Creating Teacher Accounts
+    {
+      path: '/dashboard/admin/create-teacher',
+      name: 'CreateTeacher',
+      component: () => import('@/components/Enrollment/Teachers/CreateTeacher.vue'),
+      meta: {requiresAuth: true, role: 'admin'}
+    },
     // GRADES
     {
       path: '/grades/:subjectId',
       name: 'GradesPage',
       component: () => import('@/views/Auth/GradesPage.vue')
+    },
+    {
+    path: '/students/subject/:subjectId',  // 👈 make sure :subjectId is there
+    name: 'StudentSubject',
+    component: DashboardGrades
     },
 
     // STUDENT ENROLLMENT PAGE
