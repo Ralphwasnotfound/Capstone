@@ -16,8 +16,6 @@ export const createAcademicYear = async (req, res) => {
   try {
     const { year, semester, enrollment_start, enrollment_end, is_active } = req.body;
 
-
-
     const [result] = await studentDB.query(
       `INSERT INTO academic_years 
         (year, semester, enrollment_start, enrollment_end, is_active)
