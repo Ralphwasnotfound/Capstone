@@ -2,14 +2,14 @@
 import { studentDB } from '../../db.js';
 
 export const getTeacherSubjects = async (req, res) => {
-  const teacherId = req.params.id; // Teacher's ID from the route parameters
+  const teacherId = req.params.id; // teacher's ID
 
   if (!teacherId) {
-    return res.status(400).json({ error: "Teacher ID is required" });
+    return res.status(400).json({ success: false, error: "Teacher ID is required" });
   }
 
   try {
-    // Fetch the subjects assigned to the teacher
+    // Fetch subjects assigned to this teacher
     const [subjects] = await studentDB.query(`
       SELECT DISTINCT
         s.id AS subject_id,
@@ -22,34 +22,45 @@ export const getTeacherSubjects = async (req, res) => {
       WHERE e.teacher_id = ?`, [teacherId]);
 
     if (!subjects.length) {
-      return res.json({ success: true, data: [] }); // If no subjects, return empty
+      return res.json({ success: true, data: [] }); // no subjects assigned
     }
 
+    // Get all student IDs enrolled in these subjects
     const subjectIds = subjects.map(s => s.subject_id);
-    let studentsBySubject = {};
 
+    let studentsBySubject = {};
     if (subjectIds.length) {
       const placeholders = subjectIds.map(() => '?').join(',');
+
+      // Fetch students and their grades
       const [students] = await studentDB.query(`
-        SELECT e.subject_id, st.id AS student_id, st.full_name, g.grade, g.remarks
+        SELECT 
+          e.subject_id,
+          st.id AS student_id,
+          st.full_name,
+          st.school_id,
+          g.grade,
+          g.remarks
         FROM enrollments e
         JOIN students st ON e.student_id = st.id
         LEFT JOIN grades g ON g.student_id = st.id AND g.subject_id = e.subject_id
-        WHERE e.subject_id IN (${placeholders}) AND e.status = 'enrolled'`, subjectIds);
+        WHERE e.subject_id IN (${placeholders}) AND e.status = 'enrolled'
+      `, subjectIds);
 
-      // Group students by subject
+      // Group students by subject_id
       students.forEach(s => {
         if (!studentsBySubject[s.subject_id]) studentsBySubject[s.subject_id] = [];
         studentsBySubject[s.subject_id].push({
           id: s.student_id,
           full_name: s.full_name,
+          school_id: s.school_id, // include school_id here
           grade: s.grade || '',
           remarks: s.remarks || ''
         });
       });
     }
 
-    // Prepare the final response to include subjects with enrolled students and their grades
+    // Combine subjects and students
     const subjectsWithStudents = subjects.map(s => ({
       id: s.subject_id,
       code: s.subject_code,
@@ -60,6 +71,7 @@ export const getTeacherSubjects = async (req, res) => {
     }));
 
     res.json({ success: true, data: subjectsWithStudents });
+
   } catch (err) {
     console.error("Error fetching teacher subjects:", err);
     res.status(500).json({ success: false, error: 'Failed to fetch teacher subjects' });

@@ -520,3 +520,66 @@ export const getStudentSubjects = async (req, res) => {
         res.status(500).json({ success: false, error: "Failed to fetch subjects" });
     }
 };
+
+
+export const getStudentBySubjects = async (req, res) => {
+  const { school_id } = req.params; // this is the student's unique school ID
+
+  if (!school_id) {
+    return res.status(400).json({ success: false, error: "Student school_id is required" });
+  }
+
+  try {
+    // Fetch student info
+    const [studentRows] = await studentDB.query(
+      `SELECT id, full_name, school_id FROM students WHERE school_id = ?`,
+      [school_id]
+    );
+
+    if (!studentRows.length) {
+      return res.status(404).json({ success: false, error: "Student not found" });
+    }
+
+    const student = studentRows[0];
+
+    // Fetch student's subjects & grades
+    const [rows] = await studentDB.query(`
+      SELECT 
+        s.id AS subject_id,
+        s.code AS subject_code,
+        s.name AS subject_name,
+        s.units,
+        s.year_level,
+        g.grade,
+        g.remarks
+      FROM enrollments e
+      JOIN subjects s ON e.subject_id = s.id
+      LEFT JOIN grades g ON g.student_id = e.student_id AND g.subject_id = s.id
+      WHERE e.student_id = ?
+        AND e.status = 'enrolled'
+    `, [student.id]);
+
+    const subjects = rows.map(r => ({
+      id: r.subject_id,
+      code: r.subject_code,
+      name: r.subject_name,
+      units: r.units,
+      year_level: r.year_level,
+      students: [{
+        id: student.id,
+        full_name: student.full_name,
+        school_id: student.school_id,
+        grade: r.grade || '',
+        remarks: r.remarks || ''
+      }]
+    }));
+
+    res.json({ success: true, data: subjects });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, error: 'Failed to fetch student subjects' });
+  }
+};
+
+

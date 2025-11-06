@@ -11,7 +11,8 @@ import {
   enrollStudent,
   approveStudent,
   getStudentByMe,
-  getEnrolledStudentsBySubject
+  getEnrolledStudentsBySubject,
+  getStudentBySubjects
 } from '../controllers/studentController.js';
 import { getStudentGradeBySubject } from '../controllers/gradesController.js';
 
@@ -37,5 +38,7 @@ router.get('/:id/subjects', getStudentGradeBySubject)
 router.put('/:schoolId/approve', verifyToken, approveStudent);
 router.post('/enroll', verifyToken, enrollStudent);
 router.get('/:schoolId', verifyToken, getStudentById);
+
+router.get("/:school_id/grades", verifyToken, getStudentBySubjects);
 
 export default router;

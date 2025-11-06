@@ -23,9 +23,7 @@
             >
               <div>
                 <h2 class="text-lg font-semibold">{{ subject.code }} - {{ subject.name }}</h2>
-                <p class="text-gray-600 text-sm">
-                  Units: {{ subject.units }}
-                </p>
+                <p class="text-gray-600 text-sm">Units: {{ subject.units }}</p>
               </div>
               <div class="text-gray-500">
                 <span v-if="subject.isOpen">▼</span>
@@ -40,6 +38,7 @@
                   <tr>
                     <th class="px-4 py-2 text-left text-sm font-medium text-gray-700">Student ID</th>
                     <th class="px-4 py-2 text-left text-sm font-medium text-gray-700">Full Name</th>
+                    <th class="px-4 py-2 text-left text-sm font-medium text-gray-700">School ID</th>
                     <th class="px-4 py-2 text-left text-sm font-medium text-gray-700">Grade</th>
                     <th class="px-4 py-2 text-left text-sm font-medium text-gray-700">Remarks</th>
                   </tr>
@@ -52,6 +51,7 @@
                   >
                     <td class="px-4 py-2 text-sm">{{ student.id }}</td>
                     <td class="px-4 py-2 text-sm">{{ student.full_name }}</td>
+                    <td class="px-4 py-2 text-sm">{{ student.school_id }}</td>
                     <td class="px-4 py-2 text-sm">
                       <input
                         v-model="student.grade"
@@ -70,9 +70,7 @@
                     </td>
                   </tr>
                   <tr v-if="subject.students.length === 0">
-                    <td colspan="4" class="px-4 py-2 text-center text-gray-500">
-                      No students enrolled yet.
-                    </td>
+                    <td colspan="5" class="px-4 py-2 text-center text-gray-500">No students enrolled yet.</td>
                   </tr>
                 </tbody>
               </table>
@@ -80,7 +78,6 @@
           </div>
         </div>
 
-        <!-- Submit All Grades Button -->
         <div class="text-right mt-4">
           <button
             class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
@@ -110,6 +107,7 @@
                 <th class="px-4 py-2 text-left text-sm font-medium text-gray-700">Subject</th>
                 <th class="px-4 py-2 text-left text-sm font-medium text-gray-700">Grade</th>
                 <th class="px-4 py-2 text-left text-sm font-medium text-gray-700">Remarks</th>
+                <th class="px-4 py-2 text-left text-sm font-medium text-gray-700">School ID</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-100">
@@ -118,9 +116,10 @@
                 <td class="px-4 py-2 text-sm">{{ subject.name }}</td>
                 <td class="px-4 py-2 text-sm">{{ subject.students[0]?.grade || '-' }}</td>
                 <td class="px-4 py-2 text-sm">{{ subject.students[0]?.remarks || '-' }}</td>
+                <td class="px-4 py-2 text-sm">{{ subject.students[0]?.school_id || '-' }}</td>
               </tr>
               <tr v-if="yearSubjects.length === 0">
-                <td colspan="4" class="px-4 py-2 text-center text-gray-500">No subjects found.</td>
+                <td colspan="5" class="px-4 py-2 text-center text-gray-500">No subjects found.</td>
               </tr>
             </tbody>
           </table>
@@ -136,7 +135,7 @@ import axios from "axios";
 export default {
   data() {
     return {
-      role: sessionStorage.getItem("role") || "student", // "teacher" or "student"
+      role: sessionStorage.getItem("role") || "student",
       subjects: [],
       loading: true,
       error: null
@@ -144,7 +143,6 @@ export default {
   },
   computed: {
     subjectsByYear() {
-      // Group subjects by year_level
       return this.subjects.reduce((acc, subject) => {
         const year = subject.year_level;
         if (!acc[year]) acc[year] = [];
@@ -153,45 +151,103 @@ export default {
       }, {});
     },
   },
-  async mounted() {
-    await this.fetchSubjects();
-  },
+async mounted() {
+  let userRaw = sessionStorage.getItem("user");
+  let token = sessionStorage.getItem("token");
+  let role = sessionStorage.getItem("role") || "student";
+
+  // --- DEV FALLBACK: Auto-add test user & token if missing ---
+  if (!userRaw) {
+    console.warn("Session user missing. Using test dev data.");
+    const testUser = {
+      id: 1,
+      full_name: "Ralph Joseph Batiancila",
+      school_id: "000001",
+      teacher_id: 1, // optional for teacher role
+      role
+    };
+    userRaw = JSON.stringify(testUser);
+    sessionStorage.setItem("user", userRaw);
+
+    // Add a fake token for dev purposes
+    if (!token) {
+      token = "dev-test-token";
+      sessionStorage.setItem("token", token);
+    }
+
+    sessionStorage.setItem("role", role);
+  }
+
+  const user = JSON.parse(userRaw);
+
+  // Validate role and required IDs
+  if (role === "student" && !user.school_id) {
+    // fallback for dev
+    console.warn("Student school_id missing, using test value.");
+    user.school_id = "000001";
+    sessionStorage.setItem("user", JSON.stringify(user));
+  }
+  if (role === "teacher" && !user.teacher_id) {
+    console.warn("Teacher ID missing, using test value.");
+    user.teacher_id = 1;
+    sessionStorage.setItem("user", JSON.stringify(user));
+  }
+
+  const idParam = role === "student" ? user.school_id : user.teacher_id;
+  await this.fetchSubjects(idParam);
+},
+
+
   methods: {
-    async fetchSubjects() {
-      try {
-        this.loading = true;
-        this.error = null;
+    async fetchSubjects(idParam) {
+  try {
+    this.loading = true;
+    this.error = null;
 
-        const token = sessionStorage.getItem("token");
-        const teacher_id = 1; // use teacher API
-        if (!token) {
-          this.error = "Authorization token is missing.";
-          return;
+    const token = sessionStorage.getItem("token");
+    if (!token) throw new Error("Authorization token missing.");
+
+    const endpoint =
+      this.role === "student"
+        ? `http://localhost:3000/students/${idParam}/grades`
+        : `http://localhost:3000/teachers/${idParam}/subjects`;
+
+    console.log("Fetching from endpoint:", endpoint); // <-- debug to ensure URL is correct
+
+    const response = await axios.get(endpoint, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    this.subjects = response.data.data.map(subject => ({
+      ...subject,
+      isOpen: true,
+      students: subject.students?.map(student => ({
+        ...student,
+        grade: student.grade || "",
+        remarks: student.remarks || ""
+      })) || []
+    }));
+
+    // Load saved local edits
+    const savedEdits = JSON.parse(localStorage.getItem("grades_edits") || "{}");
+    this.subjects.forEach(subject => {
+      subject.students.forEach(student => {
+        const key = `${subject.id}-${student.id}`;
+        if (savedEdits[key]) {
+          student.grade = savedEdits[key].grade;
+          student.remarks = savedEdits[key].remarks;
         }
+      });
+    });
 
-        const endpoint = `http://localhost:3000/teachers/${teacher_id}/subjects`;
+  } catch (err) {
+    console.error("Error fetching subjects:", err);
+    this.error = err.response?.data?.error || err.message || "Failed to fetch subjects.";
+  } finally {
+    this.loading = false;
+  }
+},
 
-        const response = await axios.get(endpoint, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-
-        this.subjects = response.data.data.map(subject => ({
-          ...subject,
-          isOpen: true,
-          students: subject.students.map(student => ({
-            ...student,
-            grade: student.grade || "",
-            remarks: student.remarks || ""
-          })),
-        }));
-
-      } catch (err) {
-        console.error("Error fetching subjects:", err);
-        this.error = err.response?.data?.error || "Failed to fetch subjects.";
-      } finally {
-        this.loading = false;
-      }
-    },
 
     saveLocalEdit(subjectId, studentId, grade, remarks) {
       const savedGrades = JSON.parse(localStorage.getItem("grades_edits") || "{}");
@@ -208,7 +264,7 @@ export default {
           subject.students.map(student => ({
             student_id: student.id,
             subject_id: subject.id,
-            teacher_id: user.teacher_id,
+            teacher_id: user.teacher_id || null,
             grade: student.grade || '',
             remarks: student.remarks || ''
           }))
