@@ -4,12 +4,14 @@ import {
     loginUser,
     getUsers,
     deleteUser,
-    createTeacherByAdmin
+    createTeacherByAdmin,
+    getStudents
 } from '../controllers/userController.js'
 
 const router = express.Router()
 
 router.get('/', getUsers)
+router.get('/', getStudents)
 router.post('/register', registerUser)
 router.post('/create', createTeacherByAdmin)
 router.post('/login', loginUser)

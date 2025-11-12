@@ -3,6 +3,30 @@ import jwt from 'jsonwebtoken'
 import { userDB } from '../db.js' 
 import { studentDB } from '../db.js';
 
+export const getStudents = async (req, res) => {
+    try {
+        const { user_id } = req.query
+
+        let query = "SELECT * FROM students"
+        const params = []
+
+        if (user_id) {
+            query += " WHERE user_id = ?"
+            params.push(user_id)
+        }
+
+        const [students] = await studentDB.query(query, params)
+
+        res.json({
+            success: true,
+            data: students
+        })
+    } catch (error) {
+        console.error("Error fetching students:", error)
+        res.status(500).json({ success:false, error: "Server Error" })
+    }
+}
+
 export const registerUser = async (req, res) => {
     const { full_name, email, password, role = 'student', contact } = req.body
 

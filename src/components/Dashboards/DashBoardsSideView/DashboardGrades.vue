@@ -90,42 +90,45 @@
     </div>
 
     <!-- STUDENT VIEW -->
-    <div v-else-if="role === 'student'">
-      <h1 class="text-2xl font-bold mb-6">Your Grades</h1>
+    <!-- STUDENT VIEW -->
+<div v-else-if="role === 'student'">
+  <h1 class="text-2xl font-bold mb-6">Your Grades</h1>
 
-      <div v-if="loading" class="text-gray-500">Loading subjects...</div>
-      <div v-else-if="error" class="text-red-500">{{ error }}</div>
+  <div v-if="loading" class="text-gray-500">Loading subjects...</div>
+  <div v-else-if="error" class="text-red-500">{{ error }}</div>
 
-      <div v-else>
-        <div v-for="(yearSubjects, year) in subjectsByYear" :key="year" class="mb-8">
-          <h2 class="text-xl font-semibold mb-4">{{ year }} Year</h2>
+  <div v-else>
+    <div v-for="(yearSubjects, year) in subjectsByYear" :key="year" class="mb-8">
+      <h2 class="text-xl font-semibold mb-4">{{ year }} Year</h2>
 
-          <table class="min-w-full divide-y divide-gray-200 border rounded-lg">
-            <thead class="bg-gray-50">
-              <tr>
-                <th class="px-4 py-2 text-left text-sm font-medium text-gray-700">Code</th>
-                <th class="px-4 py-2 text-left text-sm font-medium text-gray-700">Subject</th>
-                <th class="px-4 py-2 text-left text-sm font-medium text-gray-700">Grade</th>
-                <th class="px-4 py-2 text-left text-sm font-medium text-gray-700">Remarks</th>
-                <th class="px-4 py-2 text-left text-sm font-medium text-gray-700">School ID</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-100">
-              <tr v-for="subject in yearSubjects" :key="subject.id">
-                <td class="px-4 py-2 text-sm">{{ subject.code }}</td>
-                <td class="px-4 py-2 text-sm">{{ subject.name }}</td>
-                <td class="px-4 py-2 text-sm">{{ subject.students[0]?.grade || '-' }}</td>
-                <td class="px-4 py-2 text-sm">{{ subject.students[0]?.remarks || '-' }}</td>
-                <td class="px-4 py-2 text-sm">{{ subject.students[0]?.school_id || '-' }}</td>
-              </tr>
-              <tr v-if="yearSubjects.length === 0">
-                <td colspan="5" class="px-4 py-2 text-center text-gray-500">No subjects found.</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <table class="min-w-full divide-y divide-gray-200 border rounded-lg">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-4 py-2 text-left text-sm font-medium text-gray-700">Code</th>
+            <th class="px-4 py-2 text-left text-sm font-medium text-gray-700">Subject</th>
+            <th class="px-4 py-2 text-left text-sm font-medium text-gray-700">Grade</th>
+            <th class="px-4 py-2 text-left text-sm font-medium text-gray-700">Remarks</th>
+            <th class="px-4 py-2 text-left text-sm font-medium text-gray-700">School ID</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100">
+          <tr v-for="subject in yearSubjects" :key="subject.id">
+            <!-- Since the student sees only their own grades, pick the first student -->
+            <td class="px-4 py-2 text-sm">{{ subject.code }}</td>
+            <td class="px-4 py-2 text-sm">{{ subject.name }}</td>
+            <td class="px-4 py-2 text-sm">{{ subject.students[0]?.grade || '-' }}</td>
+            <td class="px-4 py-2 text-sm">{{ subject.students[0]?.remarks || '-' }}</td>
+            <td class="px-4 py-2 text-sm">{{ subject.students[0]?.school_id || '-' }}</td>
+          </tr>
+          <tr v-if="yearSubjects.length === 0">
+            <td colspan="5" class="px-4 py-2 text-center text-gray-500">No subjects found.</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
+  </div>
+</div>
+
   </div>
 </template>
 
@@ -151,94 +154,109 @@ export default {
       }, {});
     },
   },
-async mounted() {
-  let userRaw = sessionStorage.getItem("user");
-  let token = sessionStorage.getItem("token");
-  let role = sessionStorage.getItem("role") || "student";
+  async mounted() {
+  const userRaw = sessionStorage.getItem("user");
+  const token = sessionStorage.getItem("token");
+  const role = sessionStorage.getItem("role") || "student";
 
-  // --- DEV FALLBACK: Auto-add test user & token if missing ---
   if (!userRaw) {
     console.warn("Session user missing. Using test dev data.");
     const testUser = {
       id: 1,
       full_name: "Ralph Joseph Batiancila",
+      user_id: 1, // user_id for API
       school_id: "000001",
       teacher_id: 1, // optional for teacher role
       role
     };
-    userRaw = JSON.stringify(testUser);
-    sessionStorage.setItem("user", userRaw);
+    sessionStorage.setItem("user", JSON.stringify(testUser));
 
-    // Add a fake token for dev purposes
     if (!token) {
-      token = "dev-test-token";
-      sessionStorage.setItem("token", token);
+      sessionStorage.setItem("token", "dev-test-token");
     }
 
     sessionStorage.setItem("role", role);
   }
 
-  const user = JSON.parse(userRaw);
+  const user = JSON.parse(sessionStorage.getItem("user"));
 
-  // Validate role and required IDs
-  if (role === "student" && !user.school_id) {
-    // fallback for dev
-    console.warn("Student school_id missing, using test value.");
-    user.school_id = "000001";
-    sessionStorage.setItem("user", JSON.stringify(user));
-  }
-  if (role === "teacher" && !user.teacher_id) {
-    console.warn("Teacher ID missing, using test value.");
-    user.teacher_id = 1;
-    sessionStorage.setItem("user", JSON.stringify(user));
-  }
-
-  const idParam = role === "student" ? user.school_id : user.teacher_id;
-  await this.fetchSubjects(idParam);
-},
-
-
-  methods: {
-    async fetchSubjects(idParam) {
   try {
     this.loading = true;
     this.error = null;
 
-    const token = sessionStorage.getItem("token");
-    if (!token) throw new Error("Authorization token missing.");
+    if (role === "student") {
+      // Step 1: Get student info using user_id
+      const studentResp = await axios.get(
+        `http://localhost:3000/students?user_id=${user.id}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
 
-    const endpoint =
-      this.role === "student"
-        ? `http://localhost:3000/students/${idParam}/grades`
-        : `http://localhost:3000/teachers/${idParam}/subjects`;
+      if (!studentResp.data.data.length) {
+        throw new Error("Student not found for this user_id");
+      }
 
-    console.log("Fetching from endpoint:", endpoint); // <-- debug to ensure URL is correct
+      const student = studentResp.data.data[0];
+      const schoolId = student.school_id;
 
-    const response = await axios.get(endpoint, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+      // Step 2: Get grades using school_id
+      const gradesResp = await axios.get(
+        `http://localhost:3000/students/${schoolId}/grades`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
 
-    this.subjects = response.data.data.map(subject => ({
-      ...subject,
-      isOpen: true,
-      students: subject.students?.map(student => ({
-        ...student,
-        grade: student.grade || "",
-        remarks: student.remarks || ""
-      })) || []
-    }));
+      this.subjects = gradesResp.data.data.map(subject => ({
+        ...subject,
+        isOpen: true,
+        students: subject.students?.map(s => ({
+          ...s,
+          grade: s.grade || "",
+          remarks: s.remarks || ""
+        })) || []
+      }));
 
-    // Load saved local edits
-    const savedEdits = JSON.parse(localStorage.getItem("grades_edits") || "{}");
-    this.subjects.forEach(subject => {
-      subject.students.forEach(student => {
-        const key = `${subject.id}-${student.id}`;
-        if (savedEdits[key]) {
-          student.grade = savedEdits[key].grade;
-          student.remarks = savedEdits[key].remarks;
-        }
+      // Load saved local edits
+      const savedEdits = JSON.parse(localStorage.getItem("grades_edits") || "{}");
+      this.subjects.forEach(subject => {
+        subject.students.forEach(student => {
+          const key = `${subject.id}-${student.id}`;
+          if (savedEdits[key]) {
+            student.grade = savedEdits[key].grade;
+            student.remarks = savedEdits[key].remarks;
+          }
+        });
       });
-    });
+
+    } else if (role === "teacher") {
+      // Teacher flow: use teacher_id
+      const teacherId = user.teacher_id;
+      const endpoint = `http://localhost:3000/teachers/${teacherId}/subjects`;
+
+      const response = await axios.get(endpoint, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      this.subjects = response.data.data.map(subject => ({
+        ...subject,
+        isOpen: true,
+        students: subject.students?.map(s => ({
+          ...s,
+          grade: s.grade || "",
+          remarks: s.remarks || ""
+        })) || []
+      }));
+
+      // Load saved local edits for teacher as well
+      const savedEdits = JSON.parse(localStorage.getItem("grades_edits") || "{}");
+      this.subjects.forEach(subject => {
+        subject.students.forEach(student => {
+          const key = `${subject.id}-${student.id}`;
+          if (savedEdits[key]) {
+            student.grade = savedEdits[key].grade;
+            student.remarks = savedEdits[key].remarks;
+          }
+        });
+      });
+    }
 
   } catch (err) {
     console.error("Error fetching subjects:", err);
@@ -248,6 +266,51 @@ async mounted() {
   }
 },
 
+  methods: {
+    async fetchSubjects(idParam) {
+      try {
+        this.loading = true;
+        this.error = null;
+
+        const token = sessionStorage.getItem("token");
+        const endpoint =
+          this.role === "student"
+            ? `http://localhost:3000/students/${idParam}/grades`
+            : `http://localhost:3000/teachers/${idParam}/subjects`;
+
+        const response = await axios.get(endpoint, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        this.subjects = response.data.data.map(subject => ({
+          ...subject,
+          isOpen: true,
+          students: subject.students?.map(student => ({
+            ...student,
+            grade: student.grade || "",
+            remarks: student.remarks || ""
+          })) || []
+        }));
+
+        // Load saved local edits
+        const savedEdits = JSON.parse(localStorage.getItem("grades_edits") || "{}");
+        this.subjects.forEach(subject => {
+          subject.students.forEach(student => {
+            const key = `${subject.id}-${student.id}`;
+            if (savedEdits[key]) {
+              student.grade = savedEdits[key].grade;
+              student.remarks = savedEdits[key].remarks;
+            }
+          });
+        });
+
+      } catch (err) {
+        console.error("Error fetching subjects:", err);
+        this.error = err.response?.data?.error || err.message || "Failed to fetch subjects.";
+      } finally {
+        this.loading = false;
+      }
+    },
 
     saveLocalEdit(subjectId, studentId, grade, remarks) {
       const savedGrades = JSON.parse(localStorage.getItem("grades_edits") || "{}");
@@ -266,7 +329,8 @@ async mounted() {
             subject_id: subject.id,
             teacher_id: user.teacher_id || null,
             grade: student.grade || '',
-            remarks: student.remarks || ''
+            remarks: student.remarks || '',
+            academic_year_id: student.academic_year_id || 1 // fallback if needed
           }))
         );
 

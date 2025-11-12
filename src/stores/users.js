@@ -3,28 +3,27 @@ import { defineStore } from 'pinia'
 
 export const useUserStore = defineStore('user', {
   state: () => ({
-    user: null, // will hold the logged-in user
+    user: null,
+    token: null
   }),
   actions: {
     setUser(userData, token = null) {
       this.user = userData
-      if (token) {
-        this.token = token
-        localStorage.setItem('token', token)
-      }
-      localStorage.setItem('user', JSON.stringify(userData))
+      this.token = token
+      if (token) sessionStorage.setItem('token', token)
+      sessionStorage.setItem('user', JSON.stringify(userData))
     },
     logOut() {
       this.user = null
       this.token = null
-      localStorage.removeItem('token')
-      localStorage.removeItem('user')
+      sessionStorage.removeItem('token')
+      sessionStorage.removeItem('user')
     },
     loadUser() {
-      const storedUser = localStorage.getItem('user')
-      if (storedUser) {
-        this.user = JSON.parse(storedUser)
-      }
+      const storedUser = sessionStorage.getItem('user')
+      const storedToken = sessionStorage.getItem('token')
+      if (storedUser) this.user = JSON.parse(storedUser)
+      if (storedToken) this.token = storedToken
     }
-  },
+  }
 })

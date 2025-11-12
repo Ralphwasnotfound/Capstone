@@ -44,6 +44,7 @@
 
 <script>
 import { loginUser } from '@/composables/registration'
+import { useUserStore } from '@/stores/users.js' // ✅ Import Pinia store
 
 export default {
   data() {
@@ -67,20 +68,28 @@ export default {
         const { success, data, error } = await loginUser(this.form)
 
         if (success) {
+          const userStore = useUserStore() // ✅ Pinia store instance
           const user = data.user
           const token = data.token
 
-          // Save everything needed
-          sessionStorage.setItem('user', JSON.stringify(user))
-          sessionStorage.setItem('role', user.role)
-          sessionStorage.setItem('token', token) // <-- important for API calls
+          // Clear old session
+          sessionStorage.clear()
 
-          // Save IDs
+          // Save user and token to sessionStorage
+          sessionStorage.setItem('user', JSON.stringify(user))
+          sessionStorage.setItem('token', token)
+          sessionStorage.setItem('role', user.role)
+          sessionStorage.setItem('user_id', user.id)
+
+          // Save specific IDs
           if (user.role === 'teacher' && user.teacher_id) {
             sessionStorage.setItem('teacher_id', user.teacher_id)
           } else if (user.role === 'student' && user.student_id) {
             sessionStorage.setItem('student_id', user.student_id)
           }
+
+          // ✅ Update Pinia store
+          userStore.setUser(user, token)
 
           alert('Login successful!')
           this.$router.push('/dashboard')

@@ -582,4 +582,23 @@ export const getStudentBySubjects = async (req, res) => {
   }
 };
 
+export const getStudentsFiltered = async (req, res) => {
+  try {
+    const { user_id } = req.query;
+    let query = "SELECT * FROM students";
+    const params = [];
+
+    if (user_id) {
+      query += " WHERE user_id = ?";
+      params.push(user_id);
+    }
+
+    const [students] = await studentDB.query(query, params);
+    res.json({ success: true, data: students });
+  } catch (err) {
+    console.error("Error fetching students:", err);
+    res.status(500).json({ success: false, message: "Server Error" });
+  }
+};
+
 

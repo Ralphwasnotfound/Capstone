@@ -12,13 +12,15 @@ import {
   approveStudent,
   getStudentByMe,
   getEnrolledStudentsBySubject,
-  getStudentBySubjects
+  getStudentBySubjects,
+  getStudentsFiltered
 } from '../controllers/studentController.js';
 import { getStudentGradeBySubject } from '../controllers/gradesController.js';
 
 const router = express.Router();
 
 // Collection routes
+router.get('/', verifyToken, getStudentsFiltered);
 router.get('/', verifyToken, getStudents);
 router.post('/create', verifyToken, createStudent);
 
