@@ -88,35 +88,37 @@ export default {
     },
 
     async loadStudent() {
-      try {
-        // 1️⃣ Get logged-in student
-        const meResp = await axios.get('http://localhost:3000/students/me', {
-          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-        });
-        const meStudent = meResp.data.data;
-        this.form.student_id = meStudent.id;
-        this.form.school_id = meStudent.school_id;
+  try {
+    const meResp = await axios.get('http://localhost:3000/students/me', {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+    });
+    const meStudent = meResp.data.data;
+    this.form.student_id = meStudent.id;
+    this.form.school_id = meStudent.school_id;
 
-        // 2️⃣ Fetch all students to get email and course_id
-        const allResp = await axios.get('http://localhost:3000/students', {
-          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-        });
-        const fullStudent = allResp.data.find(s => s.id === meStudent.id);
+    const allResp = await axios.get('http://localhost:3000/students', {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+    });
 
-        if (fullStudent) {
-          const courseMap = { 1: 'BSIT', 2: 'BSBA', 3: 'BSCRIM' };
-          this.student = {
-            ...fullStudent,
-            course_name: courseMap[fullStudent.course_id] || 'Unknown',
-          };
-        } else {
-          this.student = { ...meStudent, course_name: 'Unknown', email: '' };
-        }
-      } catch (err) {
-        console.error('Error loading student:', err.response?.data || err);
-        alert('Failed to load student data.');
-      }
-    },
+    // ✅ Access the correct array
+    const studentsArray = allResp.data.data || [];
+    const fullStudent = studentsArray.find(s => s.id === meStudent.id);
+
+    if (fullStudent) {
+      const courseMap = { 1: 'BSIT', 2: 'BSBA', 3: 'BSCRIM' };
+      this.student = {
+        ...fullStudent,
+        course_name: courseMap[fullStudent.course_id] || 'Unknown',
+      };
+    } else {
+      this.student = { ...meStudent, course_name: 'Unknown', email: '' };
+    }
+  } catch (err) {
+    console.error('Error loading student:', err.response?.data || err);
+    alert('Failed to load student data.');
+  }
+},
+
 
     async handleSubmit() {
       try {

@@ -523,7 +523,7 @@ export const getStudentSubjects = async (req, res) => {
 
 
 export const getStudentBySubjects = async (req, res) => {
-  const { school_id } = req.params; // this is the student's unique school ID
+  const { school_id } = req.params; // Student's unique school ID
 
   if (!school_id) {
     return res.status(400).json({ success: false, error: "Student school_id is required" });
@@ -542,7 +542,7 @@ export const getStudentBySubjects = async (req, res) => {
 
     const student = studentRows[0];
 
-    // Fetch student's subjects & grades
+    // Fetch student's subjects & grades including semester
     const [rows] = await studentDB.query(`
       SELECT 
         s.id AS subject_id,
@@ -550,6 +550,7 @@ export const getStudentBySubjects = async (req, res) => {
         s.name AS subject_name,
         s.units,
         s.year_level,
+        s.semester,
         g.grade,
         g.remarks
       FROM enrollments e
@@ -559,12 +560,14 @@ export const getStudentBySubjects = async (req, res) => {
         AND e.status = 'enrolled'
     `, [student.id]);
 
+    // Map subjects including semester
     const subjects = rows.map(r => ({
       id: r.subject_id,
       code: r.subject_code,
       name: r.subject_name,
       units: r.units,
       year_level: r.year_level,
+      semester: r.semester, // <-- added
       students: [{
         id: student.id,
         full_name: student.full_name,
@@ -581,6 +584,7 @@ export const getStudentBySubjects = async (req, res) => {
     res.status(500).json({ success: false, error: 'Failed to fetch student subjects' });
   }
 };
+
 
 export const getStudentsFiltered = async (req, res) => {
   try {

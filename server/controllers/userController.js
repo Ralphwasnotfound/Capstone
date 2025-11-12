@@ -23,7 +23,7 @@ export const getStudents = async (req, res) => {
         })
     } catch (error) {
         console.error("Error fetching students:", error)
-        res.status(500).json({ success:false, error: "Server Error" })
+        res.status(500).json({ success:false, error: error })
     }
 }
 
@@ -62,58 +62,54 @@ export const registerUser = async (req, res) => {
 }
 
 export const createTeacherByAdmin = async (req, res) => {
-  console.log("Incoming body:", req.body)
+  const { email, full_name = "Pending Name", specialization = "Not Set", contact = null } = req.body;
 
-  const { email } = req.body
-
-  if (!email) {
-    return res.status(400).json({ error: 'Email is required' })
-  }
+  if (!email) return res.status(400).json({ error: 'Email is required' });
 
   try {
-    // Check if email already exists in users
-    const [existing] = await userDB.query('SELECT * FROM users WHERE email = ?', [email])
-    if (existing.length > 0) {
-      return res.status(409).json({ error: 'Email already exists' })
-    }
+    // 1️⃣ Check if email exists
+    const [existing] = await userDB.query('SELECT * FROM users WHERE email = ?', [email]);
+    if (existing.length > 0) return res.status(409).json({ error: 'Email already exists' });
 
-    // Default password
-    const defaultPassword = 'Changeme123'
-    const hashedPassword = await bcrypt.hash(defaultPassword, 10)
+    // 2️⃣ Hash default password
+    const defaultPassword = 'Changeme123';
+    const hashedPassword = await bcrypt.hash(defaultPassword, 10);
 
-    // Insert into users
+    // 3️⃣ Insert into users table
     const [userResult] = await userDB.query(
-      `INSERT INTO users (full_name, email, password, role)
-       VALUES (?, ?, ?, 'teacher')`,
-      ['Pending Name', email, hashedPassword]
-    )
+      `INSERT INTO users (full_name, email, password, role) VALUES (?, ?, ?, 'teacher')`,
+      [full_name, email, hashedPassword]
+    );
+    const userId = userResult.insertId;
 
-    const userId = userResult.insertId
-
-    // Insert into teachers (registration DB)
+    // 4️⃣ Insert into registrations.teachers table
     await userDB.query(
-      `INSERT INTO teachers (user_id, full_name, email, specialization, status)
-       VALUES (?, ?, ?, ?,'approved')`,
-      [userId, 'Pending Name',email, 'Not Set']
-    )
+      `INSERT INTO teachers (user_id, full_name, email, specialization, contact, status)
+       VALUES (?, ?, ?, ?, ?, 'approved')`,
+      [userId, full_name, email, specialization, contact]
+    );
 
-    // Automatically insert into enrollment_system.teachers
+    // 5️⃣ Insert into enrollment_system.teachers table
     await studentDB.query(
-      `INSERT INTO teachers (full_name, email, specialization, contact, status, credential_url, id_url)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      ['Pending Name', email, 'Not Set', null, 'approved', null, null]
-    )
+      `INSERT INTO teachers (user_id, full_name, email, specialization, contact, status, credential_url, id_url)
+       VALUES (?, ?, ?, ?, ?, 'approved', ?, ?)`,
+      [userId, full_name, email, specialization, contact, null, null]
+    );
 
     res.json({
       success: true,
-      message: 'Teacher created and synced to enrollment system!',
+      message: 'Teacher created and synced!',
       defaultPassword,
-    })
+      userId
+    });
+
   } catch (err) {
-    console.error('Admin create teacher error:', err)
-    res.status(500).json({ error: 'Server error creating teacher' })
+    console.error('Admin create teacher error:', err);
+    res.status(500).json({ error: err.message || 'Server error creating teacher' });
   }
-}
+};
+
+
 
 export const changePassword = async (req, res) => {
     const { userId, currentPassword, newPassword } = req.body

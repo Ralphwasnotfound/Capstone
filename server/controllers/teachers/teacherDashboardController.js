@@ -9,23 +9,25 @@ export const getTeacherSubjects = async (req, res) => {
   }
 
   try {
-    // Fetch subjects assigned to this teacher
+    // Fetch subjects assigned to this teacher, including semester
     const [subjects] = await studentDB.query(`
       SELECT DISTINCT
         s.id AS subject_id,
         s.name AS subject_name,
         s.code AS subject_code,
         s.units,
-        s.year_level
+        s.year_level,
+        s.semester   -- ✅ include semester
       FROM subjects s
       JOIN enrollments e ON s.id = e.subject_id
-      WHERE e.teacher_id = ?`, [teacherId]);
+      WHERE e.teacher_id = ?
+    `, [teacherId]);
 
     if (!subjects.length) {
-      return res.json({ success: true, data: [] }); // no subjects assigned
+      return res.json({ success: true, data: [] });
     }
 
-    // Get all student IDs enrolled in these subjects
+    // Get all subject IDs
     const subjectIds = subjects.map(s => s.subject_id);
 
     let studentsBySubject = {};
@@ -43,8 +45,11 @@ export const getTeacherSubjects = async (req, res) => {
           g.remarks
         FROM enrollments e
         JOIN students st ON e.student_id = st.id
-        LEFT JOIN grades g ON g.student_id = st.id AND g.subject_id = e.subject_id
-        WHERE e.subject_id IN (${placeholders}) AND e.status = 'enrolled'
+        LEFT JOIN grades g 
+          ON g.student_id = st.id 
+          AND g.subject_id = e.subject_id
+        WHERE e.subject_id IN (${placeholders}) 
+          AND e.status = 'enrolled'
       `, subjectIds);
 
       // Group students by subject_id
@@ -53,7 +58,7 @@ export const getTeacherSubjects = async (req, res) => {
         studentsBySubject[s.subject_id].push({
           id: s.student_id,
           full_name: s.full_name,
-          school_id: s.school_id, // include school_id here
+          school_id: s.school_id,
           grade: s.grade || '',
           remarks: s.remarks || ''
         });
@@ -67,6 +72,7 @@ export const getTeacherSubjects = async (req, res) => {
       name: s.subject_name,
       units: s.units,
       year_level: s.year_level,
+      semester: s.semester,  // ✅ added here
       students: studentsBySubject[s.subject_id] || []
     }));
 
@@ -77,6 +83,7 @@ export const getTeacherSubjects = async (req, res) => {
     res.status(500).json({ success: false, error: 'Failed to fetch teacher subjects' });
   }
 };
+
 
 
 
