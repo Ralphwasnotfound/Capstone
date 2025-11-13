@@ -35,17 +35,18 @@ export default {
   },
   methods: {
     async createTeacher() {
-      try {
-        const res = await axios.post("http://localhost:3000/users/create", {
-          email: this.email,
-        });
-        this.message = `${res.data.message} Default Password: ${res.data.defaultPassword}`;
-        this.email = "";
-      } catch (err) {
-        console.error(err);
-        this.message = err.response?.data?.error || "Failed to create teacher";
-      }
-    },
+  try {
+    const res = await axios.post("http://localhost:3000/users/create", {
+      email: this.email,
+    });
+    this.message = `${res.data.message} Default Password: ${res.data.temporary_password}`;
+    this.email = "";
+  } catch (err) {
+    console.error(err);
+    this.message = err.response?.data?.error || "Failed to create teacher";
+  }
+}
+
   },
 };
 </script>

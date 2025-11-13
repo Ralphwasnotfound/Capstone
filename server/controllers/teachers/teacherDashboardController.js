@@ -2,87 +2,70 @@
 import { studentDB, userDB } from '../../db.js';
 
 export const getTeacherSubjects = async (req, res) => {
-  const teacherId = req.params.id; // teacher's ID
+  const userId = req.query.user_id; // get user_id from query
 
-  if (!teacherId) {
-    return res.status(400).json({ success: false, error: "Teacher ID is required" });
+  if (!userId) {
+    return res.status(400).json({ success: false, message: "user_id is required" });
   }
 
   try {
-    // Fetch subjects assigned to this teacher, including semester
-    const [subjects] = await studentDB.query(`
-      SELECT DISTINCT
-        s.id AS subject_id,
-        s.name AS subject_name,
-        s.code AS subject_code,
-        s.units,
-        s.year_level,
-        s.semester   -- ✅ include semester
-      FROM subjects s
-      JOIN enrollments e ON s.id = e.subject_id
-      WHERE e.teacher_id = ?
-    `, [teacherId]);
+    // Step 1: Get teacher_id from user_id
+    const [teacherRows] = await studentDB.query(
+      "SELECT id FROM teachers WHERE user_id = ?",
+      [userId]
+    );
 
-    if (!subjects.length) {
+    if (teacherRows.length === 0) {
+      return res.status(404).json({ success: false, message: "Teacher not found." });
+    }
+
+    const teacherId = teacherRows[0].id;
+
+    // Step 2: Fetch subjects assigned to this teacher
+    const [subjects] = await studentDB.query(
+      `
+      SELECT s.id, s.code, s.name, s.units, s.year_level, s.semester
+      FROM teacher_subjects ts
+      JOIN subjects s ON ts.subject_id = s.id
+      WHERE ts.teacher_id = ?
+      `,
+      [teacherId]
+    );
+
+    // Step 3: Fetch enrolled students per subject
+    if (subjects.length === 0) {
       return res.json({ success: true, data: [] });
     }
 
-    // Get all subject IDs
-    const subjectIds = subjects.map(s => s.subject_id);
+    const subjectIds = subjects.map(s => s.id);
+    const placeholders = subjectIds.map(() => "?").join(",");
 
-    let studentsBySubject = {};
-    if (subjectIds.length) {
-      const placeholders = subjectIds.map(() => '?').join(',');
+    const [students] = await studentDB.query(
+      `
+      SELECT e.subject_id, st.id, st.full_name, st.school_id,
+             COALESCE(g.grade, '') AS grade, COALESCE(g.remarks, '') AS remarks
+      FROM enrollments e
+      JOIN students st ON e.student_id = st.id
+      LEFT JOIN grades g ON g.student_id = st.id AND g.subject_id = e.subject_id
+      WHERE e.subject_id IN (${placeholders}) AND e.teacher_id = ?
+      `,
+      [...subjectIds, teacherId]
+    );
 
-      // Fetch students and their grades
-      const [students] = await studentDB.query(`
-        SELECT 
-          e.subject_id,
-          st.id AS student_id,
-          st.full_name,
-          st.school_id,
-          g.grade,
-          g.remarks
-        FROM enrollments e
-        JOIN students st ON e.student_id = st.id
-        LEFT JOIN grades g 
-          ON g.student_id = st.id 
-          AND g.subject_id = e.subject_id
-        WHERE e.subject_id IN (${placeholders}) 
-          AND e.status = 'enrolled'
-      `, subjectIds);
-
-      // Group students by subject_id
-      students.forEach(s => {
-        if (!studentsBySubject[s.subject_id]) studentsBySubject[s.subject_id] = [];
-        studentsBySubject[s.subject_id].push({
-          id: s.student_id,
-          full_name: s.full_name,
-          school_id: s.school_id,
-          grade: s.grade || '',
-          remarks: s.remarks || ''
-        });
-      });
-    }
-
-    // Combine subjects and students
-    const subjectsWithStudents = subjects.map(s => ({
-      id: s.subject_id,
-      code: s.subject_code,
-      name: s.subject_name,
-      units: s.units,
-      year_level: s.year_level,
-      semester: s.semester,  // ✅ added here
-      students: studentsBySubject[s.subject_id] || []
+    // Group students by subject
+    const subjectsWithStudents = subjects.map(subject => ({
+      ...subject,
+      students: students.filter(st => st.subject_id === subject.id)
     }));
 
     res.json({ success: true, data: subjectsWithStudents });
 
-  } catch (err) {
-    console.error("Error fetching teacher subjects:", err);
-    res.status(500).json({ success: false, error: 'Failed to fetch teacher subjects' });
+  } catch (error) {
+    console.error("Error fetching teacher subjects:", error);
+    res.status(500).json({ success: false, message: "Database error", error: error.message });
   }
 };
+
 
 // Get all subjects assigned to a teacher with their students
 export const getTeacherSubjectsWithStudents = async (req, res) => {
@@ -162,7 +145,8 @@ export const getTeacherByUserId = async (req, res) => {
   }
 
   try {
-    const [rows] = await studentDB.query(
+    // Step 1: Get teacher info
+    const [teacherRows] = await studentDB.query(
       `SELECT 
         id, user_id, full_name, profile_picture, email, contact, address, bio,
         occupation, education, skills, specialization, status
@@ -171,16 +155,72 @@ export const getTeacherByUserId = async (req, res) => {
       [userId]
     );
 
-    if (!rows.length) {
+    if (!teacherRows.length) {
       return res.status(404).json({ success: false, message: "Teacher not found" });
     }
 
-    res.json({ success: true, data: rows });
+    const teacher = teacherRows[0];
+
+    // Step 2: Get subjects assigned to this teacher
+    const [subjects] = await studentDB.query(
+      `
+      SELECT 
+        s.id,
+        s.code,
+        s.name,
+        s.units,
+        s.year_level,
+        s.semester
+      FROM teacher_subjects ts
+      JOIN subjects s ON ts.subject_id = s.id
+      WHERE ts.teacher_id = ?
+      `,
+      [teacher.id]
+    );
+
+    // Step 3: Fetch students per subject
+    if (subjects.length) {
+      const subjectIds = subjects.map(s => s.id);
+      const placeholders = subjectIds.map(() => "?").join(",");
+
+      const [students] = await studentDB.query(
+        `
+        SELECT 
+          e.subject_id,
+          st.id,
+          st.full_name,
+          st.school_id,
+          COALESCE(g.grade, '') AS grade,
+          COALESCE(g.remarks, '') AS remarks
+        FROM enrollments e
+        JOIN students st ON e.student_id = st.id
+        LEFT JOIN grades g ON g.student_id = st.id AND g.subject_id = e.subject_id
+        WHERE e.subject_id IN (${placeholders})
+        AND e.teacher_id = ?
+        `,
+        [...subjectIds, teacher.id]
+      );
+
+      // Attach students to their subjects
+      subjects.forEach(subject => {
+        subject.students = students.filter(st => st.subject_id === subject.id);
+      });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        teacher,
+        subjects
+      }
+    });
+
   } catch (err) {
-    console.error("Error fetching teacher:", err);
-    res.status(500).json({ success: false, message: "Database error" });
+    console.error("Error fetching teacher and subjects:", err);
+    res.status(500).json({ success: false, message: "Database error", error: err.message });
   }
 };
+
 
 export const updateTeacherProfile = async (req, res) => {
   const userId = req.params.userId;

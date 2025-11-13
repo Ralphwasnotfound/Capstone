@@ -50,7 +50,7 @@
                 type="text" 
                 class="w-full border p-2 rounded"
                 placeholder="09XXXXXXXXX"
-                required>
+                >
             </div>
 
             <div class="flex justify-center">

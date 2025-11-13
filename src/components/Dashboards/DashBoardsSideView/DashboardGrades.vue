@@ -180,212 +180,77 @@ export default {
       return grouped;
     },
   },
-
   async mounted() {
-    const userRaw = sessionStorage.getItem("user");
+  this.loading = true;
+  this.error = null;
+
+  try {
     const token = sessionStorage.getItem("token");
-    const role = sessionStorage.getItem("role") || "student";
+    let user = JSON.parse(sessionStorage.getItem("user"));
+    const role = sessionStorage.getItem("role") || "teacher";
 
-    if (!userRaw) {
-      console.warn("Session user missing. Using test dev data.");
-      const testUser = {
-        id: 1,
-        full_name: "Ralph Joseph Batiancila",
-        user_id: 1,
-        school_id: "000001",
-        teacher_id: 1,
-        role,
-      };
-      sessionStorage.setItem("user", JSON.stringify(testUser));
+    // If user missing or no user_id, fetch teachers from backend
+    if (!user || !user.user_id) {
+      const res = await axios.get(`http://localhost:3000/teachers/subjects?users_id=${user.user_id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
-      if (!token) {
-        sessionStorage.setItem("token", "dev-test-token");
+      if (res.data.success && res.data.data.length > 0) {
+        user = res.data.data[0]; // pick the first teacher
+        if (!user.user_id && user.id) user.user_id = user.id; // ensure user_id exists
+        sessionStorage.setItem("user", JSON.stringify(user));
+      } else {
+        throw new Error("No teacher found in backend.");
       }
-
-      sessionStorage.setItem("role", role);
     }
 
-    const user = JSON.parse(sessionStorage.getItem("user"));
+    // Now we are sure user.user_id exists
+    await this.fetchTeacherSubjects(user.user_id);
+
+  } catch (err) {
+    console.error("Error initializing teacher subjects:", err);
+    this.error = err.message || "Failed to load teacher subjects.";
+  } finally {
+    this.loading = false;
+  }
+},
+
+methods: {
+  async fetchTeacherSubjects(userId) {
+    if (!userId) {
+      this.error = "User ID is missing";
+      return;
+    }
+
+    this.loading = true;
+    this.error = null;
 
     try {
-      this.loading = true;
-      this.error = null;
+      const token = sessionStorage.getItem("token");
+      const res = await axios.get(
+        `http://localhost:3000/teachers/subjects?user_id=${userId}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
 
-      if (role === "student") {
-        const studentResp = await axios.get(
-          `http://localhost:3000/students?user_id=${user.id}`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+      // Make sure subjects and students arrays exist
+      this.subjects = (res.data.data || []).map(sub => ({
+        ...sub,
+        students: Array.isArray(sub.students) ? sub.students : [],
+        semester: sub.semester || "1st",
+      }));
 
-        if (!studentResp.data.data.length) {
-          throw new Error("Student not found for this user_id");
-        }
+      console.log("✅ Subjects fetched:", this.subjects);
 
-        const student = studentResp.data.data[0];
-        const schoolId = student.school_id;
-
-        const gradesResp = await axios.get(
-          `http://localhost:3000/students/${schoolId}/grades`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-
-        this.subjects = gradesResp.data.data.map((subject) => ({
-          ...subject,
-          isOpen: true,
-          semester: subject.semester || "1st", // ✅ ensure semester exists
-          students:
-            subject.students?.map((s) => ({
-              ...s,
-              grade: s.grade || "",
-              remarks: s.remarks || "",
-            })) || [],
-        }));
-
-        const savedEdits = JSON.parse(localStorage.getItem("grades_edits") || "{}");
-        this.subjects.forEach((subject) => {
-          subject.students.forEach((student) => {
-            const key = `${subject.id}-${student.id}`;
-            if (savedEdits[key]) {
-              student.grade = savedEdits[key].grade;
-              student.remarks = savedEdits[key].remarks;
-            }
-          });
-        });
-      } else if (role === "teacher") {
-        const teacherId = user.teacher_id;
-        const endpoint = `http://localhost:3000/teachers/${teacherId}/subjects`;
-
-        const response = await axios.get(endpoint, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        this.subjects = response.data.data.map((subject) => ({
-          ...subject,
-          isOpen: true,
-          semester: subject.semester || "1st", // ✅ ensure semester exists
-          students:
-            subject.students?.map((s) => ({
-              ...s,
-              grade: s.grade || "",
-              remarks: s.remarks || "",
-            })) || [],
-        }));
-
-        const savedEdits = JSON.parse(localStorage.getItem("grades_edits") || "{}");
-        this.subjects.forEach((subject) => {
-          subject.students.forEach((student) => {
-            const key = `${subject.id}-${student.id}`;
-            if (savedEdits[key]) {
-              student.grade = savedEdits[key].grade;
-              student.remarks = savedEdits[key].remarks;
-            }
-          });
-        });
-      }
     } catch (err) {
-      console.error("Error fetching subjects:", err);
+      console.error("❌ Failed to fetch teacher subjects:", err);
       this.error = err.response?.data?.error || err.message || "Failed to fetch subjects.";
+      this.subjects = [];
     } finally {
       this.loading = false;
     }
   },
+}
 
-  methods: {
-    async fetchSubjects(idParam) {
-      try {
-        this.loading = true;
-        this.error = null;
 
-        const token = sessionStorage.getItem("token");
-        const endpoint =
-          this.role === "student"
-            ? `http://localhost:3000/students/${idParam}/grades`
-            : `http://localhost:3000/teachers/${idParam}/subjects`;
-
-        const response = await axios.get(endpoint, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        this.subjects = response.data.data.map((subject) => ({
-          ...subject,
-          isOpen: true,
-          semester: subject.semester || "1st", // ✅ ensure semester field
-          students:
-            subject.students?.map((student) => ({
-              ...student,
-              grade: student.grade || "",
-              remarks: student.remarks || "",
-            })) || [],
-        }));
-
-        const savedEdits = JSON.parse(localStorage.getItem("grades_edits") || "{}");
-        this.subjects.forEach((subject) => {
-          subject.students.forEach((student) => {
-            const key = `${subject.id}-${student.id}`;
-            if (savedEdits[key]) {
-              student.grade = savedEdits[key].grade;
-              student.remarks = savedEdits[key].remarks;
-            }
-          });
-        });
-      } catch (err) {
-        console.error("Error fetching subjects:", err);
-        this.error = err.response?.data?.error || err.message || "Failed to fetch subjects.";
-      } finally {
-        this.loading = false;
-      }
-    },
-
-    saveLocalEdit(subjectId, studentId, grade, remarks) {
-      const savedGrades = JSON.parse(localStorage.getItem("grades_edits") || "{}");
-      savedGrades[`${subjectId}-${studentId}`] = { grade, remarks };
-      localStorage.setItem("grades_edits", JSON.stringify(savedGrades));
-    },
-
-    async submitAllGrades() {
-      try {
-        const user = JSON.parse(sessionStorage.getItem("user"));
-        const token = sessionStorage.getItem("token");
-
-        const grades = this.subjects.flatMap((subject) =>
-          subject.students.map((student) => ({
-            student_id: student.id,
-            subject_id: subject.id,
-            teacher_id: user.teacher_id || null,
-            grade: student.grade || "",
-            remarks: student.remarks || "",
-            academic_year_id: student.academic_year_id || 1,
-            semester: subject.semester || "1st", // ✅ include semester in submission
-          }))
-        );
-
-        if (!grades.length) {
-          alert("No grades to submit.");
-          return;
-        }
-
-        const response = await axios.post(
-          "http://localhost:3000/grades/bulk-update",
-          { grades },
-          {
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        if (response.data.success) {
-          alert("All grades submitted successfully!");
-          localStorage.removeItem("grades_edits");
-        } else {
-          alert("Failed to submit grades: " + (response.data.error || "Unknown error"));
-        }
-      } catch (err) {
-        console.error(err);
-        alert("Error submitting grades: " + (err.response?.data?.error || err.message));
-      }
-    },
-  },
 };
 </script>

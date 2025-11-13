@@ -34,13 +34,13 @@ export const registerStudent = async (req, res) => {
 
     // 1. Create user (role = student)
     const [userResult] = await userDB.query(
-      'INSERT INTO users (full_name, email, password, role, contact) VALUES (?, ?, ?, ?, ?)',
-      [full_name, email, hashedPassword, 'student', contact || null]
+      'INSERT INTO users (full_name, email, password, role) VALUES (?, ?, ?, ?)',
+      [full_name, email, hashedPassword, 'student']
     );
 
     const userID = userResult.insertId;
 
-    // 2. Create student profile (without student_number)
+    // 2. Create student profile (with contact)
     const [studentResult] = await userDB.query(
       `INSERT INTO students
       (user_id, street, barangay, city, province, zipcode, contact, guardian_name, guardian_contact)
