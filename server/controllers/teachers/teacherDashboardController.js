@@ -1,5 +1,5 @@
 // controllers/teachers/teacherDashboardController.js
-import { studentDB } from '../../db.js';
+import { studentDB, userDB } from '../../db.js';
 
 export const getTeacherSubjects = async (req, res) => {
   const teacherId = req.params.id; // teacher's ID
@@ -155,32 +155,94 @@ export const getApprovedTeachers = async (req, res) => {
 }
 
 export const getTeacherByUserId = async (req, res) => {
-  const userId = req.query.user_id
+  const userId = req.query.user_id;
 
   if (!userId) {
-    return res.status(400).json({ success: false, message: "user_id is required"})
+    return res.status(400).json({ success: false, message: "user_id is required" });
   }
 
   try {
     const [rows] = await studentDB.query(
       `SELECT 
-        t.id,
-        t.full_name,
-        t.email,
-        t.specialization,
-        t.status
-      FROM teachers t
-      WHERE t.user_id = ?`,
+        id, user_id, full_name, profile_picture, email, contact, address, bio,
+        occupation, education, skills, specialization, status
+      FROM teachers
+      WHERE user_id = ?`,
       [userId]
-    )
+    );
 
     if (!rows.length) {
-      return res.status(404).json({ success: false, message: "Teacher not found"})
+      return res.status(404).json({ success: false, message: "Teacher not found" });
     }
 
-    res.json({ success:true, data: rows})
+    res.json({ success: true, data: rows });
   } catch (err) {
-    console.error("Error fetching teacher:", err)
-    res.status(500).json({ success: false, message: "Database error"})
+    console.error("Error fetching teacher:", err);
+    res.status(500).json({ success: false, message: "Database error" });
   }
-}
+};
+
+export const updateTeacherProfile = async (req, res) => {
+  const userId = req.params.userId;
+
+  // Safely destructure req.body to avoid crashing if it's undefined
+  const {
+    full_name,
+    profile_picture,
+    email,
+    contact,
+    address,
+    bio,
+    occupation,
+    education,
+    skills,
+    specialization,
+    status
+  } = req.body || {}; // <-- fallback to empty object
+
+  // Optional: check if body actually has required fields
+  if (!full_name || !email) {
+    return res.status(400).json({ success: false, message: "Full name and email are required" });
+  }
+
+  try {
+    const teacherQuery = `
+      UPDATE teachers SET 
+        full_name=?, profile_picture=?, email=?, contact=?, address=?, bio=?,
+        occupation=?, education=?, skills=?, specialization=?, status=?
+      WHERE user_id=?`;
+
+    const teacherParams = [
+      full_name, profile_picture, email, contact, address, bio,
+      occupation, education, skills, specialization, status,
+      userId
+    ];
+
+    await studentDB.query(teacherQuery, teacherParams);
+    await userDB.query(teacherQuery, teacherParams);
+
+    // Update users table if teacher exists
+    const [teacherRows] = await userDB.query(
+      `SELECT user_id FROM teachers WHERE user_id = ?`,
+      [userId]
+    );
+
+    if (teacherRows.length) {
+      await userDB.query(
+        `UPDATE users SET full_name=?, email=? WHERE id=?`,
+        [full_name, email, teacherRows[0].user_id]
+      );
+    }
+
+    res.json({ success: true, message: "Profile updated successfully in both databases" });
+  } catch (err) {
+    console.error("Error updating teacher profile:", err);
+    res.status(500).json({ success: false, message: "Database error" });
+  }
+};
+
+
+
+
+
+
