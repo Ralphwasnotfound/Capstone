@@ -99,7 +99,9 @@ export default {
     return {
       users: [],
       students: [],
-      studentInfo: null
+      studentInfo: null,
+      teacherInfo: null,
+      teacherSubjects: []
     };
   },
   methods: {
@@ -138,6 +140,10 @@ export default {
 
       // Fetch teacher data if teacher
       if (this.role === 'teacher') {
+        const res = await axios.get(`http://localhost:3000/teachers?user_id=${userId}`,{
+          headers: { Authorization: `Bearer ${token}`}
+      })
+      this.teacherInfo = res.data?.data?.[0] || null
         console.log('Teacher dashboard loaded')
         // teacher-specific fetches if needed
       }

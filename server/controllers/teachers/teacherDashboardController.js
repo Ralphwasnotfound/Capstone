@@ -84,9 +84,6 @@ export const getTeacherSubjects = async (req, res) => {
   }
 };
 
-
-
-
 // Get all subjects assigned to a teacher with their students
 export const getTeacherSubjectsWithStudents = async (req, res) => {
   const teacherId = req.params.id;
@@ -157,3 +154,33 @@ export const getApprovedTeachers = async (req, res) => {
   }
 }
 
+export const getTeacherByUserId = async (req, res) => {
+  const userId = req.query.user_id
+
+  if (!userId) {
+    return res.status(400).json({ success: false, message: "user_id is required"})
+  }
+
+  try {
+    const [rows] = await studentDB.query(
+      `SELECT 
+        t.id,
+        t.full_name,
+        t.email,
+        t.specialization,
+        t.status
+      FROM teachers t
+      WHERE t.user_id = ?`,
+      [userId]
+    )
+
+    if (!rows.length) {
+      return res.status(404).json({ success: false, message: "Teacher not found"})
+    }
+
+    res.json({ success:true, data: rows})
+  } catch (err) {
+    console.error("Error fetching teacher:", err)
+    res.status(500).json({ success: false, message: "Database error"})
+  }
+}

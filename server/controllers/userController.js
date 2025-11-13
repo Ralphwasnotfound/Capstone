@@ -109,8 +109,6 @@ export const createTeacherByAdmin = async (req, res) => {
   }
 };
 
-
-
 export const changePassword = async (req, res) => {
     const { userId, currentPassword, newPassword } = req.body
 

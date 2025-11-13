@@ -1,10 +1,11 @@
 // routes/teachers/teacherDashboard.js
 import express from "express";
-import { getTeacherSubjects, getApprovedTeachers, getTeacherSubjectsWithStudents } from "../../controllers/teachers/teacherDashboardController.js";
+import { getTeacherSubjects, getApprovedTeachers, getTeacherSubjectsWithStudents,getTeacherByUserId } from "../../controllers/teachers/teacherDashboardController.js";
 import { verifyToken } from '../../middleware/auth.js';
 
 const router = express.Router();
 
+router.get("/", verifyToken, getTeacherByUserId)
 router.get("/:id/subjects", verifyToken, getTeacherSubjects);
 router.get("/:id/grades/subjects", verifyToken, getTeacherSubjectsWithStudents);
 
