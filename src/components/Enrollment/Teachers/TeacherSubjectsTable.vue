@@ -84,16 +84,15 @@ export default {
     async fetchTeacherSubjects() {
       try {
         // Get user from sessionStorage
-        let user = JSON.parse(sessionStorage.getItem("user"));
+        const userId = sessionStorage.getItem("user_id")
 
-        if (!user || !user.user_id) {
-          console.warn("⚠ User missing in sessionStorage, fetching from backend...");
-          user = await this.fetchUser();
-          if (!user) return;
+        if (!userId) {
+          console.error("No user_id in sessionStorage")
+          return
         }
 
         const response = await axios.get(
-          `http://localhost:3000/teachers/subjects?user_id=${user.user_id}`,
+          `http://localhost:3000/teachers/subjects?user_id=${userId}`,
           { headers: { Authorization: `Bearer ${this.token}` } }
         );
 

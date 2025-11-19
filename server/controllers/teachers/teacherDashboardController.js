@@ -281,7 +281,34 @@ export const updateTeacherProfile = async (req, res) => {
   }
 };
 
+export const submitGrades = async (req, res) => {
+  const { updates } = req.body;
 
+  if (!Array.isArray(updates) || updates.length === 0) {
+    return res.status(400).json({ message: "No grade updates provided." });
+  }
+
+  try {
+    for (const update of updates) {
+      const { subject_id, teacher_id, student_id, grade, remarks } = update;
+
+      await studentDB.query(
+        `
+        INSERT INTO grades (subject_id, teacher_id, student_id, grade, remarks)
+        VALUES (?, ?, ?, ?, ?)
+        ON DUPLICATE KEY UPDATE grade = VALUES(grade), remarks = VALUES(remarks)
+        `,
+        [subject_id, teacher_id, student_id, grade, remarks]
+      );
+    }
+
+    return res.status(200).json({ message: "Grades updated successfully!" });
+
+  } catch (err) {
+    console.error("Grade submission error:", err);
+    return res.status(500).json({ message: "Failed to update grades." });
+  }
+};
 
 
 

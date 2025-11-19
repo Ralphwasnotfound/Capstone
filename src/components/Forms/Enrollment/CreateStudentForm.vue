@@ -65,81 +65,82 @@
       <!-- Submit Button -->
       <button
         type="submit"
-        class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition-colors"
+        :disabled="loading"
+        class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition-colors disabled:opacity-50"
       >
-        Create Student
+        {{ loading ? 'Creating...' : 'Create Student' }}
       </button>
     </form>
   </div>
 </template>
 
 <script>
-import axios from 'axios';
+import axios from "axios";
 
 export default {
   data() {
     return {
       form: {
-        full_name: '',
-        email: '',
-        course_id: '',
-        enrollment_type: ''
+        full_name: "",
+        email: "",
+        course_id: "",
+        enrollment_type: ""
       },
       loading: false
     };
   },
   methods: {
     async handleSubmit() {
+      console.log("Form submitted!", this.form);
       if (this.loading) return;
+
       this.loading = true;
 
       try {
-        // 1️⃣ Create student
-        const createResp = await axios.post(
-          'http://localhost:3000/students/create',
-          { ...this.form, course_id: Number(this.form.course_id) },
-          { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
+        const token = sessionStorage.getItem("token"); // use sessionStorage
+
+        const response = await axios.post(
+          "http://localhost:3000/students/create",
+          {
+            ...this.form,
+            course_id: Number(this.form.course_id)
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          }
         );
 
-        if (!createResp.data.success) {
-          alert('Failed to create student: ' + (createResp.data.error || 'Unknown error'));
-          this.loading = false;
-          return;
+        if (response.data.success) {
+          alert("Student created successfully!");
+          // Reset form
+          this.resetForm();
+
+          // Optional: redirect to student enrollment page
+          this.$router.push({
+            path: "/student-enrollment/student",
+            query: {
+              schoolId: response.data.school_id
+            }
+          });
+        } else {
+          alert("Failed to create student: " + (response.data.error || "Unknown error"));
         }
-
-        const schoolId = createResp.data.school_id;
-
-        // 2️⃣ Fetch active semester
-        const semesterResp = await axios.get('http://localhost:3000/academic-years/active', {
-          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-        });
-
-        const semester = semesterResp.data.data?.semester || '1st';
-
-        // 3️⃣ Reset form and redirect
-        this.resetForm();
-
-        setTimeout(() => {
-            this.$router.push({
-                path: '/student-enrollment/student',
-                query: { schoolId, semester }
-            });
-        },)
-        
-
       } catch (err) {
-        console.error('Error creating student:', err.response?.data || err);
-        alert('Error creating student');
+        console.error("Error creating student:", err.response?.data || err);
+        alert("Error creating student");
       } finally {
         this.loading = false;
       }
     },
+
     resetForm() {
       this.form = {
-        full_name: '',
-        email: '',
-        course_id: '',
-        enrollment_type: ''
+        full_name: "",
+        email: "",
+        course_id: "",
+        enrollment_type: ""
       };
     }
   }
@@ -147,5 +148,5 @@ export default {
 </script>
 
 <style scoped>
-/* Optional additional styling */
+/* Optional styling */
 </style>

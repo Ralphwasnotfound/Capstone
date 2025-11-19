@@ -30,7 +30,7 @@
               </div>
             </div>
 
-            <!-- Students Table (always visible) -->
+            <!-- Students Table -->
             <div class="overflow-x-auto p-4">
               <table class="min-w-full divide-y divide-gray-200 border-t">
                 <thead class="bg-gray-100">
@@ -42,6 +42,7 @@
                     <th class="px-4 py-2 text-left text-sm font-semibold text-gray-700">Remarks</th>
                   </tr>
                 </thead>
+
                 <tbody class="divide-y divide-gray-100">
                   <tr
                     v-for="(student, i) in subject.students"
@@ -51,19 +52,25 @@
                     <td class="px-4 py-2 text-sm">{{ student.id }}</td>
                     <td class="px-4 py-2 text-sm">{{ student.full_name }}</td>
                     <td class="px-4 py-2 text-sm">{{ student.school_id }}</td>
+
+                    <!-- Grade input -->
                     <td class="px-4 py-2 text-sm">
                       <input
                         v-model="student.grade"
                         class="border p-1 w-20 rounded"
                         type="text"
+                        :disabled="submittedGrades[subject.id]?.[student.id]"
                         @input="saveLocalEdit(subject.id, student.id, student.grade, student.remarks)"
                       />
                     </td>
+
+                    <!-- Remarks input -->
                     <td class="px-4 py-2 text-sm">
                       <input
                         v-model="student.remarks"
                         class="border p-1 w-32 rounded"
                         type="text"
+                        :disabled="submittedGrades[subject.id]?.[student.id]"
                         @input="saveLocalEdit(subject.id, student.id, student.grade, student.remarks)"
                       />
                     </td>
@@ -76,10 +83,31 @@
                   </tr>
                 </tbody>
               </table>
+
+              <!-- Buttons -->
+              <div class="mt-4 flex gap-2">
+                <!-- Reopen Editing -->
+                <button
+                  class="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600"
+                  @click="unlockSubject(subject.id)"
+                >
+                  Reopen Editing
+                </button>
+
+                <!-- Cancel Editing -->
+                <button
+                  v-if="originalValues[subject.id]"
+                  class="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
+                  @click="cancelEdit(subject.id)"
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
           </div>
         </div>
 
+        <!-- Submit All -->
         <div class="text-right mt-6">
           <button
             class="bg-green-500 text-white px-5 py-2 rounded-lg font-semibold hover:bg-green-600 shadow-md"
@@ -91,7 +119,7 @@
       </div>
     </div>
 
-    <!-- STUDENT VIEW -->
+    <!-- STUDENT VIEW (unchanged) -->
     <div v-else-if="role === 'student'">
       <h1 class="text-2xl font-bold mb-6">Your Grades</h1>
 
@@ -115,6 +143,7 @@
                   <th class="px-4 py-2 text-left text-sm font-medium text-gray-700">School ID</th>
                 </tr>
               </thead>
+
               <tbody class="divide-y divide-gray-100">
                 <tr v-for="subject in subjects" :key="subject.id">
                   <td class="px-4 py-2 text-sm">{{ subject.code }}</td>
@@ -123,6 +152,7 @@
                   <td class="px-4 py-2 text-sm">{{ subject.students[0]?.remarks || '-' }}</td>
                   <td class="px-4 py-2 text-sm">{{ subject.students[0]?.school_id || '-' }}</td>
                 </tr>
+
                 <tr v-if="subjects.length === 0">
                   <td colspan="5" class="px-4 py-2 text-center text-gray-500">No subjects found.</td>
                 </tr>
@@ -135,16 +165,22 @@
   </div>
 </template>
 
+
+
 <script>
 import axios from "axios";
 
 export default {
   data() {
     return {
-      role: sessionStorage.getItem("role") || "student",
+      role: sessionStorage.getItem("role") || "teacher",
       subjects: [],
       loading: true,
       error: null,
+
+      localEdits: {},
+      submittedGrades: {},     // 🔥 Disable fields
+      originalValues: {}        // 🔥 Store originals for Cancel
     };
   },
 
@@ -158,10 +194,8 @@ export default {
       }, {});
     },
 
-    // ✅ Added: Proper grouping by Year + Semester
     subjectsByYearSemester() {
       const grouped = {};
-
       this.subjects.forEach((subject) => {
         const year = subject.year_level || "Unknown";
         const semester =
@@ -169,88 +203,225 @@ export default {
             ? "2nd"
             : subject.semester === "Midyear"
             ? "Midyear"
-            : "1st"; // fallback
+            : "1st";
 
         if (!grouped[year]) grouped[year] = {};
         if (!grouped[year][semester]) grouped[year][semester] = [];
-
         grouped[year][semester].push(subject);
       });
 
       return grouped;
-    },
+    }
   },
-  async mounted() {
+
+async mounted() {
   this.loading = true;
-  this.error = null;
 
   try {
     const token = sessionStorage.getItem("token");
-    let user = JSON.parse(sessionStorage.getItem("user"));
-    const role = sessionStorage.getItem("role") || "teacher";
+    const userId = sessionStorage.getItem("user_id");
 
-    // If user missing or no user_id, fetch teachers from backend
-    if (!user || !user.user_id) {
-      const res = await axios.get(`http://localhost:3000/teachers/subjects?users_id=${user.user_id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+    if (!token) throw new Error("Missing token");
+    if (!userId) throw new Error("Missing user_id");
 
-      if (res.data.success && res.data.data.length > 0) {
-        user = res.data.data[0]; // pick the first teacher
-        if (!user.user_id && user.id) user.user_id = user.id; // ensure user_id exists
-        sessionStorage.setItem("user", JSON.stringify(user));
-      } else {
-        throw new Error("No teacher found in backend.");
-      }
+    if (this.role === 'student') {
+      await this.fetchStudentGrades();
+      return;
     }
 
-    // Now we are sure user.user_id exists
-    await this.fetchTeacherSubjects(user.user_id);
+    await this.fetchTeacherSubjects(userId);
+
+    const saved = localStorage.getItem("gradeEdits");
+    if (saved) {
+      this.localEdits = JSON.parse(saved);
+      this.applyLocalEditsToSubjects();
+    }
 
   } catch (err) {
-    console.error("Error initializing teacher subjects:", err);
-    this.error = err.message || "Failed to load teacher subjects.";
+    this.error = err.message;
   } finally {
     this.loading = false;
   }
 },
 
-methods: {
-  async fetchTeacherSubjects(userId) {
-    if (!userId) {
-      this.error = "User ID is missing";
+
+  methods: {
+    saveLocalEdit(subjectId, studentId, grade, remarks) {
+      if (!this.localEdits[subjectId]) this.localEdits[subjectId] = {};
+      this.localEdits[subjectId][studentId] = { grade, remarks };
+      localStorage.setItem("gradeEdits", JSON.stringify(this.localEdits));
+    },
+
+    applyLocalEditsToSubjects() {
+      for (const subjectId in this.localEdits) {
+        const subject = this.subjects.find(s => s.id == subjectId);
+        if (!subject) continue;
+
+        for (const studentId in this.localEdits[subjectId]) {
+          const edit = this.localEdits[subjectId][studentId];
+          const student = subject.students.find(s => s.id == studentId);
+          if (!student) continue;
+
+          student.grade = edit.grade;
+          student.remarks = edit.remarks;
+        }
+      }
+    },
+
+    unlockSubject(subjectId) {
+      const subject = this.subjects.find(s => s.id == subjectId);
+      if (!subject) return;
+
+      this.originalValues[subjectId] = {};
+
+      subject.students.forEach(student => {
+        this.originalValues[subjectId][student.id] = {
+          grade: student.grade,
+          remarks: student.remarks
+        };
+      });
+
+      delete this.submittedGrades[subjectId];
+      alert("Editing unlocked for this subject!");
+    },
+
+    cancelEdit(subjectId) {
+      const subject = this.subjects.find(s => s.id == subjectId);
+      if (!subject || !this.originalValues[subjectId]) return;
+
+      for (const student of subject.students) {
+        const orig = this.originalValues[subjectId][student.id];
+        if (orig) {
+          student.grade = orig.grade;
+          student.remarks = orig.remarks;
+        }
+      }
+
+      this.submittedGrades[subjectId] = {};
+      subject.students.forEach(student => {
+        this.submittedGrades[subjectId][student.id] = true;
+      });
+
+      delete this.localEdits[subjectId];
+      localStorage.setItem("gradeEdits", JSON.stringify(this.localEdits));
+
+      delete this.originalValues[subjectId];
+
+      alert("Changes canceled.");
+    },
+
+    async submitAllGrades() {
+      try {
+        const token = sessionStorage.getItem("token");
+        const teacherId = Number(sessionStorage.getItem("user_id"));
+
+        if (!teacherId) {
+          alert("Teacher ID missing. Please re-login.");
+          return;
+        }
+
+        const payload = [];
+
+        for (const subjectId in this.localEdits) {
+          for (const studentId in this.localEdits[subjectId]) {
+            const edit = this.localEdits[subjectId][studentId];
+
+            payload.push({
+              subject_id: Number(subjectId),
+              student_id: Number(studentId),
+              teacher_id: teacherId,
+              grade: edit.grade,
+              remarks: edit.remarks
+            });
+          }
+        }
+
+        if (payload.length === 0) {
+          alert("No changes to submit.");
+          return;
+        }
+
+        await axios.post(
+          "http://localhost:3000/teachers/submit-grades",
+          { updates: payload },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+
+        for (const subjectId in this.localEdits) {
+          if (!this.submittedGrades[subjectId]) {
+            this.submittedGrades[subjectId] = {};
+          }
+          for (const studentId in this.localEdits[subjectId]) {
+            this.submittedGrades[subjectId][studentId] = true;
+          }
+        }
+
+        localStorage.removeItem("gradeEdits");
+        this.localEdits = {};
+
+        alert("Grades submitted successfully!");
+
+      } catch (err) {
+        alert("Failed to submit grades.", err);
+      }
+    },
+
+    async fetchTeacherSubjects(userId) {
+      try {
+        const token = sessionStorage.getItem("token");
+        const res = await axios.get(
+          `http://localhost:3000/teachers/subjects?user_id=${userId}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+
+        this.subjects = (res.data.data || []).map(sub => ({
+          ...sub,
+          students: Array.isArray(sub.students) ? sub.students : [],
+          semester: sub.semester || "1st"
+        }));
+
+      } catch (err) {
+        this.error = "Failed to fetch subjects";
+        this.subjects = [];
+        alert (err)
+      }
+    },
+
+    async fetchStudentGrades() {
+  try {
+    const token = sessionStorage.getItem("token");
+    const schoolId = sessionStorage.getItem("school_id");
+
+    if (!schoolId) {
+      console.error("Missing school_id in sessionStorage");
       return;
     }
 
-    this.loading = true;
-    this.error = null;
+    const res = await axios.get(
+      `http://localhost:3000/students/${schoolId}/grades`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
 
-    try {
-      const token = sessionStorage.getItem("token");
-      const res = await axios.get(
-        `http://localhost:3000/teachers/subjects?user_id=${userId}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+    const data = res.data.data || [];
 
-      // Make sure subjects and students arrays exist
-      this.subjects = (res.data.data || []).map(sub => ({
-        ...sub,
-        students: Array.isArray(sub.students) ? sub.students : [],
-        semester: sub.semester || "1st",
-      }));
+    // Transform backend result for your front-end table
+    this.subjects = data.map(sub => ({
+      ...sub,
+      students: [
+        {
+          grade: sub.grade,
+          remarks: sub.remarks,
+          school_id: schoolId
+        }
+      ]
+    }));
 
-      console.log("✅ Subjects fetched:", this.subjects);
-
-    } catch (err) {
-      console.error("❌ Failed to fetch teacher subjects:", err);
-      this.error = err.response?.data?.error || err.message || "Failed to fetch subjects.";
-      this.subjects = [];
-    } finally {
-      this.loading = false;
-    }
-  },
+  } catch (err) {
+    console.error("Error fetching student grades:", err);
+  }
 }
 
 
+  }
 };
 </script>

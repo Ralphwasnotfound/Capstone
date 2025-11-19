@@ -130,31 +130,33 @@ export default {
     };
   },
   async created() {
-    const user = JSON.parse(sessionStorage.getItem("user"));
-    const token = sessionStorage.getItem("token");
+  const user = JSON.parse(sessionStorage.getItem("user"));
+  const token = sessionStorage.getItem("token");
 
-    if (user && user.id && token) {
-      try {
-        const res = await axios.get(
-          `http://localhost:3000/teachers?user_id=${user.id}`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        if (res.data.success && res.data.data.length > 0) {
-          this.teacher = res.data.data[0];
+  if (user && user.id && token) {
+    try {
+      const res = await axios.get(
+        `http://localhost:3000/teachers?user_id=${user.id}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
 
-          // If address exists, split it into separate fields
-          if (this.teacher.address) {
-            const parts = this.teacher.address.split(",").map(p => p.trim());
-            [this.teacher.street, this.teacher.barangay, this.teacher.city, this.teacher.province, this.teacher.zipcode] = parts;
-          }
+      if (res.data.success && res.data.data.teacher) {
+        this.teacher = res.data.data.teacher;
 
-          this.imageUrl = this.teacher.profile_picture || null;
+        // If address exists, split it into separate fields
+        if (this.teacher.address) {
+          const parts = this.teacher.address.split(",").map(p => p.trim());
+          [this.teacher.street, this.teacher.barangay, this.teacher.city, this.teacher.province, this.teacher.zipcode] = parts;
         }
-      } catch (err) {
-        console.error("Error fetching teacher data:", err);
+
+        this.imageUrl = this.teacher.profile_picture || null;
       }
+    } catch (err) {
+      console.error("Error fetching teacher data:", err);
     }
-  },
+  }
+},
+
   methods: {
     toggleEdit() { this.isEditing = !this.isEditing; },
     async saveProfile() {

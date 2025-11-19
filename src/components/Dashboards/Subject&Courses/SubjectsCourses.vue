@@ -22,8 +22,8 @@
           <td class="p-2">{{ subject.units }}</td>
           <td class="p-2">{{ subject.semester || 'N/A' }}</td>
           <td class="p-2">
-            <span :class="subject.enrollment_status === 'enrolled' ? 'text-green-600' : 'text-yellow-600'">
-              {{ subject.enrollment_status || 'pending' }}
+            <span :class="subject.status === 'enrolled' ? 'text-green-600' : 'text-yellow-600'">
+              {{ subject.status || 'pending' }}
             </span>
           </td>
         </tr>

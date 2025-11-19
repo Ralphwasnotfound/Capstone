@@ -13,9 +13,9 @@
 
       <!-- Email -->
       <div>
-      <label class="block font-medium">Email</label>
-      <input type="email" :value="student.email" class="border rounded p-2 w-full" readonly/></div>
-
+        <label class="block font-medium">Email</label>
+        <input type="email" :value="student.email" class="border rounded p-2 w-full" readonly />
+      </div>
 
       <!-- Course -->
       <div>
@@ -47,7 +47,6 @@
   </div>
 </template>
 
-
 <script>
 import axios from 'axios';
 
@@ -66,7 +65,6 @@ export default {
     };
   },
   async mounted() {
-    this.form.school_id = this.$route.query.schoolId || null;
     this.form.semester = this.$route.query.semester || '';
 
     await this.loadActiveYear();
@@ -87,31 +85,34 @@ export default {
       }
     },
 
-    async loadStudent() {
+  async loadStudent() {
   try {
-    const meResp = await axios.get('http://localhost:3000/students/me', {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-    });
-    const meStudent = meResp.data.data;
-    this.form.student_id = meStudent.id;
-    this.form.school_id = meStudent.school_id;
-
-    const allResp = await axios.get('http://localhost:3000/students', {
+    const resp = await axios.get('http://localhost:3000/students', {
       headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
     });
 
-    // ✅ Access the correct array
-    const studentsArray = allResp.data.data || [];
-    const fullStudent = studentsArray.find(s => s.id === meStudent.id);
+    const studentsArray = resp.data.data || [];
 
-    if (fullStudent) {
+    // Just pick the first student for now
+    const studentData = studentsArray[0];
+
+    if (studentData) {
       const courseMap = { 1: 'BSIT', 2: 'BSBA', 3: 'BSCRIM' };
+
       this.student = {
-        ...fullStudent,
-        course_name: courseMap[fullStudent.course_id] || 'Unknown',
+        full_name: studentData.full_name,
+        email: studentData.email,
+        course_name: courseMap[studentData.course_id] || 'Unknown',
+        school_id: studentData.school_id,
+        id: studentData.id,
       };
+
+      // Fill the form automatically
+      this.form.student_id = studentData.id;
+      this.form.school_id = studentData.school_id;
     } else {
-      this.student = { ...meStudent, course_name: 'Unknown', email: '' };
+      this.student = { full_name: '', email: '', course_name: 'Unknown' };
+      console.warn('No students found');
     }
   } catch (err) {
     console.error('Error loading student:', err.response?.data || err);

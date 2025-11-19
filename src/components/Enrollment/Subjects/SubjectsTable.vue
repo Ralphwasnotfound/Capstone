@@ -20,13 +20,12 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="subject in subjects" :key="subject.id" :class="subject.enrolled ? 'bg-green-50' : ''">
+            <tr v-for="subject in subjects" :key="subject.id">
               <td class="border px-4 py-2">{{ subject.code }}</td>
               <td class="border px-4 py-2">{{ subject.name }}</td>
               <td class="border px-4 py-2">{{ subject.units }}</td>
               <td class="border px-4 py-2">
                 <select
-                  v-if="!subject.enrolled"
                   v-model="subject.selectedTeacherId"
                   class="border rounded px-2 py-1"
                 >
@@ -35,18 +34,15 @@
                     {{ teacher.full_name }}
                   </option>
                 </select>
-                <span v-else>{{ subject.teacher_name || 'Assigned' }}</span>
               </td>
               <td class="border px-4 py-2 text-center">
                 <button
-                  v-if="!subject.enrolled"
                   @click="addToSelection(subject)"
                   :disabled="!subject.selectedTeacherId || isSelected(subject.id)"
                   class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 disabled:opacity-50"
                 >
                   Add
                 </button>
-                <span v-else class="text-green-600 font-semibold">Enrolled</span>
               </td>
             </tr>
           </tbody>
@@ -106,36 +102,86 @@ export default {
     },
     addToSelection(subject) {
       if (!this.isSelected(subject.id)) {
-        this.selectedSubjects.push({ ...subject});
+        this.selectedSubjects.push({ ...subject });
       }
     },
     async fetchStudentAndSubjects() {
-      try {
-        const studentId = this.$route.params.schoolId;
-        const studentRes = await axios.get(
-          `http://localhost:3000/students/${studentId}`,
-          { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
-        );
-        this.student = studentRes.data;
+  try {
+    const schoolIdParam = this.$route.params.schoolId;
+    const token = localStorage.getItem("token");
 
-        // Fetch all subjects for the student's course
-        const subjectsRes = await axios.get(
-          `http://localhost:3000/subjects/course/${this.student.course_id}?studentId=${this.student.school_id}&year_level=${this.student.year_level}&semester=${this.student.semester || 1}`,
-          { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
-        );
+    // 1️⃣ Fetch student (by school_id)
+    const studentRes = await axios.get(
+      `http://localhost:3000/students?school_id=${schoolIdParam}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
 
-        const enrolledSubjects = this.student.subjects || [];
+    if (!studentRes.data.data || !studentRes.data.data.length) {
+      return alert("Student not found.");
+    }
 
-        // Map subjects and mark enrolled ones
-        this.subjects = subjectsRes.data.data.map(sub => ({
-          ...sub,
-          enrolled: enrolledSubjects.some(e => e.subject_id === sub.id && e.enrollment_status === 'enrolled'),
-          selectedTeacherId: sub.teacher_id || null
-        }));
-      } catch (err) {
-        console.error("Fetch student or subjects failed:", err);
+    this.student = studentRes.data.data[0];
+
+    // Map course name
+    const courseMap = { 1: "BSIT", 2: "BSBA", 3: "BSCRIM" };
+    this.student.course_name = courseMap[this.student.course_id] || "Unknown";
+
+    // Save school_id to session (student viewing dashboard will need this)
+    sessionStorage.setItem("school_id", this.student.school_id);
+
+    // 2️⃣ Fetch ACTIVE academic year to get correct SEMESTER
+    let activeSemester = "1st";
+    let activeYearId = null;
+
+    try {
+      const yearRes = await axios.get(
+        `http://localhost:3000/academic-years/active?schoolId=${this.student.school_id}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (yearRes.data?.data) {
+        this.student.activeYear = yearRes.data.data;
+        activeSemester = yearRes.data.data.semester;  // <-- CORRECT
+        activeYearId = yearRes.data.data.id;
       }
-    },
+    } catch (err) {
+      console.warn("Active academic year not found.");
+    }
+
+    // 3️⃣ Determine year_level dynamically
+    const yearLevel =
+      this.$route.query.year ||
+      this.student.year_level ||
+      1;
+
+    const semester =
+      this.$route.query.semester ||
+      activeSemester ||           // <-- FROM academic year, not student table
+      "1st";
+
+    // 4️⃣ Fetch subjects for this student's course (dynamic + correct)
+    const subjectsRes = await axios.get(
+      `http://localhost:3000/subjects/course/${this.student.course_id}?studentId=${this.student.school_id}&year_level=${yearLevel}&semester=${semester}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    // 5️⃣ Prepare subjects list
+    this.subjects = subjectsRes.data.data.map(sub => ({
+      ...sub,
+      enrolled: false,
+      selectedTeacherId: null
+    }));
+
+    console.log("✔ Final Dynamic URL Used:");
+    console.log(
+      `http://localhost:3000/subjects/course/${this.student.course_id}?studentId=${this.student.school_id}&year_level=${yearLevel}&semester=${semester}`
+    );
+
+  } catch (err) {
+    console.error("Fetch student or subjects failed:", err.response?.data || err);
+    alert("Failed to load student or subjects. Check console.");
+  }
+},
     async fetchTeachers() {
       try {
         const res = await axios.get("http://localhost:3000/teachers/enrollment/approved", {
@@ -146,9 +192,10 @@ export default {
         console.error("Fetch teachers failed:", err);
       }
     },
-async confirmEnrollment() {
+    async confirmEnrollment() {
   if (!this.selectedSubjects.length) return alert("No subjects selected!");
 
+  // Use the student's academic year info
   const academicYearId = this.student.academic_year_id || this.student.activeYear?.id;
   const semester = this.student.semester || this.student.activeYear?.semester || "1st";
   const yearLevel = this.student.year_level || 1;
@@ -176,8 +223,9 @@ async confirmEnrollment() {
   };
 
   try {
+    // ✅ Updated URL to match your backend
     const res = await axios.put(
-      `http://localhost:3000/students/${this.student.school_id}/approve`,
+      `http://localhost:3000/students/${this.student.id}/approve`,
       payload,
       { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
     );
@@ -199,7 +247,6 @@ async confirmEnrollment() {
     alert("Enrollment Failed. Check console for details.");
   }
 }
-
 
   }
 };

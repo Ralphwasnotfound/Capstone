@@ -20,6 +20,7 @@
         <h2 class="text-xl font-bold">{{ year }}</h2>
 
         <div v-for="semester in ['1st', '2nd']" :key="semester" class="mb-4">
+
           <!-- Enrollment Buttons -->
           <button
             v-if="!academicYearsMap[year]?.[semester] || !academicYearsMap[year][semester].is_active"
@@ -54,7 +55,7 @@
             <button
               class="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-6 py-3 rounded-xl shadow-lg w-full mb-2"
             >
-              Enroll Now – {{ semester }} Semester
+              Enroll Now – {{ semester }}
             </button>
           </router-link>
 
@@ -77,54 +78,63 @@ import SubjectsCourses from '../Subject&Courses/SubjectsCourses.vue';
 export default {
   components: { TeacherSubjectsTable, SubjectsCourses },
   props: { role: { type: String, required: true } },
+
   data() {
     return {
       student: null,
-      subjectsByYear: {},     // { '2025-2026': { '1st': [...], '2nd': [...] } }
-      semesterStatus: {},     // { '2025-2026': { '1st': 'enrolled', '2nd': 'pending' } }
-      academicYearsMap: {},   // { '2025-2026': { '1st': {is_active}, '2nd': {...} } }
+      subjectsByYear: {},
+      semesterStatus: {},
+      academicYearsMap: {},
       loadingStudent: true,
       loadingAcademic: true
     };
   },
+
   methods: {
     async fetchStudent() {
       try {
-        const res = await axios.get('http://localhost:3000/students/me', {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+        const userId = sessionStorage.getItem("user_id");
+        const token = sessionStorage.getItem("token");
+        if (!userId) return console.error("No user ID found");
+
+        // Fetch student by user_id
+        const res = await axios.get(`http://localhost:3000/students?user_id=${userId}`, {
+          headers: { Authorization: `Bearer ${token}` },
         });
 
-        if (!res.data.success || !res.data.data) return;
-        this.student = res.data.data;
+        const studentData = res.data.data?.[0];
+        if (!studentData) return console.error("Student not found");
+        this.student = studentData;
 
+        // Fetch subjects (already enrolled-only from backend)
+        const subjectsRes = await axios.get(
+          `http://localhost:3000/students/${studentData.school_id}/subjects`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+
+        const subjects = subjectsRes.data.data || [];
+
+        // Group subjects by year + semester
         this.subjectsByYear = {};
         this.semesterStatus = {};
 
-        const subjectsData = this.student.subjects || {};
-        Object.values(subjectsData).forEach(semesters => {
-          Object.entries(semesters).forEach(([semName, subs]) => {
-            let semKey = semName.toLowerCase().includes('1st') ? '1st' : '2nd';
+        subjects.forEach(sub => {
+          // 🔧 FIX: Normalize academic_year completely
+          const year = (sub.academic_year || "UnknownYear").trim().replace(/\s+/g, '');
 
-            subs.forEach(sub => {
-              const year = sub.academic_year;
-              if (!this.subjectsByYear[year]) this.subjectsByYear[year] = { '1st': [], '2nd': [] };
-              if (!this.semesterStatus[year]) this.semesterStatus[year] = { '1st': 'none', '2nd': 'none' };
+          const semKey = sub.semester === "2nd" ? "2nd" : "1st";
 
-              this.subjectsByYear[year][semKey].push({
-                ...sub,
-                enrollment_status: sub.status || 'pending'
-              });
+          if (!this.subjectsByYear[year]) {
+            this.subjectsByYear[year] = { '1st': [], '2nd': [] };
+          }
 
-              // Update semesterStatus
-              if (sub.status === 'enrolled') this.semesterStatus[year][semKey] = 'enrolled';
-              else if (sub.status === 'pending' && this.semesterStatus[year][semKey] !== 'enrolled')
-                this.semesterStatus[year][semKey] = 'pending';
-            });
-          });
+          if (!this.semesterStatus[year]) {
+            this.semesterStatus[year] = { '1st': 'none', '2nd': 'none' };
+          }
+
+          this.subjectsByYear[year][semKey].push(sub);
+          this.semesterStatus[year][semKey] = 'enrolled';
         });
-
-        console.log("Subjects by Year:", this.subjectsByYear);
-        console.log("Semester Status:", this.semesterStatus);
 
       } catch (err) {
         console.error('Error fetching student:', err.response || err);
@@ -135,15 +145,21 @@ export default {
 
     async fetchAcademicYears() {
       try {
+        const token = sessionStorage.getItem("token");
         const res = await axios.get('http://localhost:3000/enrollment/academicYears', {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+          headers: { Authorization: `Bearer ${token}` },
         });
 
         if (res.data.success && res.data.data) {
           res.data.data.forEach(y => {
-            const yearKey = y.year;
+            // 🔧 FIX: Normalize academic year key exactly like subjects
+            const yearKey = y.year.trim().replace(/\s+/g, '');
             const semKey = y.semester.toLowerCase().includes('1st') ? '1st' : '2nd';
-            if (!this.academicYearsMap[yearKey]) this.academicYearsMap[yearKey] = { '1st': null, '2nd': null };
+
+            if (!this.academicYearsMap[yearKey]) {
+              this.academicYearsMap[yearKey] = { '1st': null, '2nd': null };
+            }
+
             this.academicYearsMap[yearKey][semKey] = {
               is_active: y.is_active === 1,
               semester: y.semester,
@@ -160,6 +176,7 @@ export default {
       }
     }
   },
+
   mounted() {
     if (this.role === 'student') {
       this.fetchStudent();
@@ -171,3 +188,4 @@ export default {
   }
 };
 </script>
+

@@ -86,38 +86,25 @@ export const assignTeacherToSubject = async (req, res) => {
 
 export const getSubjectsByCourse = async (req, res) => {
   const { courseId } = req.params;
-  const { studentId, year_level, semester } = req.query;
+  const { year_level, semester } = req.query;
 
   if (!courseId) return res.status(400).json({ success: false, message: "Course ID is required" });
 
   try {
     let query = `
-      SELECT 
-        s.id,
-        s.name,
-        s.code,
-        s.units,
-        s.course_id,
-        s.year_level,
-        e.teacher_id AS enrolled_teacher_id,
-        t.full_name AS teacher_name,
-        e.status AS enrollment_status,
-        e.semester
-      FROM subjects s
-      LEFT JOIN enrollments e ON e.subject_id = s.id AND e.school_id= ?
-      LEFT JOIN teachers t ON t.id = e.teacher_id
-      WHERE s.course_id = ?
+      SELECT id, code, name, units, year_level, course_id, semester
+      FROM subjects
+      WHERE course_id = ?
     `;
-
-    const params = [studentId || 0, courseId]; // fallback 0 if studentId not provided
+    const params = [courseId];
 
     if (year_level) {
-      query += ' AND s.year_level = ?';
+      query += ' AND year_level = ?';
       params.push(year_level);
     }
 
     if (semester) {
-      query += ' AND s.semester = ?';
+      query += ' AND semester = ?';
       params.push(semester);
     }
 
@@ -129,6 +116,7 @@ export const getSubjectsByCourse = async (req, res) => {
     res.status(500).json({ success: false, message: err.message });
   }
 };
+
 
 
 
