@@ -388,40 +388,33 @@ async mounted() {
     },
 
     async fetchStudentGrades() {
-  try {
-    const token = sessionStorage.getItem("token");
-    const schoolId = sessionStorage.getItem("school_id");
+      try {
+        const token = sessionStorage.getItem("token")
+        const schoolId = sessionStorage.getItem("school_id")
 
-    if (!schoolId) {
-      console.error("Missing school_id in sessionStorage");
-      return;
+        const res = await axios.get(
+          `http://localhost:3000/students/${schoolId}/grades`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      )
+
+      const data = res.data.data || []
+
+      // This will be used by table
+      this.subjects = data.map(sub => ({
+        ...sub,
+          students: [
+            {
+              grade: sub.grade,
+              remarks: sub.remarks,
+              school_id: schoolId
+            }
+          ]
+        }))
+
+      } catch (err) {
+        console.error("Error fetching student grades:", err)
+      }
     }
-
-    const res = await axios.get(
-      `http://localhost:3000/students/${schoolId}/grades`,
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-
-    const data = res.data.data || [];
-
-    // Transform backend result for your front-end table
-    this.subjects = data.map(sub => ({
-      ...sub,
-      students: [
-        {
-          grade: sub.grade,
-          remarks: sub.remarks,
-          school_id: schoolId
-        }
-      ]
-    }));
-
-  } catch (err) {
-    console.error("Error fetching student grades:", err);
-  }
-}
-
-
   }
 };
 </script>
