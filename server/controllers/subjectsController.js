@@ -85,10 +85,16 @@ export const assignTeacherToSubject = async (req, res) => {
 }
 
 export const getSubjectsByCourse = async (req, res) => {
-  const { courseId } = req.params;
+  let { courseId } = req.params;
   const { year_level, semester } = req.query;
 
-  if (!courseId) return res.status(400).json({ success: false, message: "Course ID is required" });
+  // 🔥 Fix: Sometimes frontend sends "null" as a string
+  if (!courseId || courseId === "null" || courseId === "undefined") {
+    return res.status(400).json({
+      success: false,
+      message: "Valid course ID is required",
+    });
+  }
 
   try {
     let query = `
@@ -99,23 +105,24 @@ export const getSubjectsByCourse = async (req, res) => {
     const params = [courseId];
 
     if (year_level) {
-      query += ' AND year_level = ?';
+      query += " AND year_level = ?";
       params.push(year_level);
     }
 
     if (semester) {
-      query += ' AND semester = ?';
+      query += " AND semester = ?";
       params.push(semester);
     }
 
     const [subjects] = await studentDB.query(query, params);
 
-    res.json({ success: true, data: subjects });
+    return res.json({ success: true, data: subjects });
   } catch (err) {
-    console.error(err);
+    console.error("getSubjectsByCourse Error:", err);
     res.status(500).json({ success: false, message: err.message });
   }
 };
+
 
 
 

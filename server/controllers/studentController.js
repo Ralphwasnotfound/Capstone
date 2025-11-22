@@ -1,32 +1,54 @@
-import { studentDB } from '../db.js';
+import { userDB, studentDB } from "../db.js";
 
-// Get all students
+/* -------------------------------------------------------
+   GET ALL STUDENTS (students table → userDB)
+-------------------------------------------------------- */
 export const getStudents = async (req, res) => {
   try {
-    const [results] = await studentDB.query('SELECT * FROM students');
-    res.json(results);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Database query failed' });
+    const { user_id, school_id } = req.query;
+
+    let query = "SELECT * FROM students";
+    const params = [];
+
+    if (user_id) {
+      query += " WHERE user_id = ?";
+      params.push(user_id);
+    } 
+    else if (school_id) {
+      query += " WHERE school_id = ?";
+      params.push(school_id);
+    }
+
+    const [students] = await userDB.query(query, params);
+    res.json({ success: true, data: students });
+
+  } catch (error) {
+    console.error("Error fetching students:", error);
+    res.status(500).json({ success:false, error });
   }
 };
 
-// Get student by ID with subjects
+
+/* -------------------------------------------------------
+   GET STUDENT BY SCHOOL ID + SUBJECTS
+-------------------------------------------------------- */
 export const getStudentById = async (req, res) => {
   const { schoolId } = req.params;
+
   try {
-    // Get student
-    const [students] = await studentDB.query(
-      'SELECT * FROM students WHERE school_id = ?',
+    // Student from userDB
+    const [students] = await userDB.query(
+      "SELECT * FROM students WHERE school_id = ?",
       [schoolId]
     );
-    if (!students.length) return res.status(404).json({ message: 'Student not found' });
+    if (!students.length)
+      return res.status(404).json({ message: "Student not found" });
 
     const student = students[0];
 
-    // Get pending enrollment info (if any)
+    // Pending info (studentDB)
     const [pending] = await studentDB.query(
-      'SELECT year_level, semester, academic_year_id FROM pending_students WHERE school_id = ? ORDER BY created_at DESC LIMIT 1',
+      "SELECT year_level, semester, academic_year_id FROM pending_students WHERE school_id = ? ORDER BY created_at DESC LIMIT 1",
       [schoolId]
     );
 
@@ -36,7 +58,7 @@ export const getStudentById = async (req, res) => {
       student.academic_year_id = pending[0].academic_year_id;
     }
 
-    // Get enrolled subjects
+    // Subjects (studentDB)
     const [subjects] = await studentDB.query(
       `SELECT 
         s.id AS subject_id, 
@@ -56,6 +78,7 @@ export const getStudentById = async (req, res) => {
     );
 
     student.subjects = subjects || [];
+
     res.json(student);
   } catch (err) {
     console.error(err);
@@ -63,23 +86,31 @@ export const getStudentById = async (req, res) => {
   }
 };
 
-
-// controllers/studentController.js
-// Get student by user_id (with structured subjects)
+/* -------------------------------------------------------
+   GET STUDENT BY USER ID + STRUCTURED SUBJECTS
+-------------------------------------------------------- */
 export const getStudentByUserId = async (req, res) => {
   const { user_id } = req.query;
-  if (!user_id) return res.status(400).json({ success: false, error: "user_id is required" });
+
+  if (!user_id)
+    return res
+      .status(400)
+      .json({ success: false, error: "user_id is required" });
 
   try {
-    // 1️⃣ Get student
-    const [studentRows] = await studentDB.query(
+    // Student from userDB
+    const [studentRows] = await userDB.query(
       "SELECT * FROM students WHERE user_id = ?",
       [user_id]
     );
-    if (!studentRows.length) return res.status(404).json({ success: false, error: "Student not found" });
+    if (!studentRows.length)
+      return res
+        .status(404)
+        .json({ success: false, error: "Student not found" });
+
     const student = studentRows[0];
 
-    // 2️⃣ Get enrolled subjects
+    // Enrolled subjects
     const [enrolledSubjects] = await studentDB.query(
       `SELECT 
          s.id AS subject_id,
@@ -99,7 +130,7 @@ export const getStudentByUserId = async (req, res) => {
       [student.id]
     );
 
-    // 3️⃣ Get pending subjects
+    // Pending subjects
     const [pendingSubjects] = await studentDB.query(
       `SELECT 
          ps.year_level,
@@ -114,38 +145,54 @@ export const getStudentByUserId = async (req, res) => {
       [student.id]
     );
 
-    // 4️⃣ Build year → semester structure
+    // Build structure
     const maxYear = Math.max(
-      ...enrolledSubjects.map(s => s.year_level),
-      ...pendingSubjects.map(p => p.year_level),
+      ...enrolledSubjects.map((s) => s.year_level),
+      ...pendingSubjects.map((p) => p.year_level),
       1
     );
+
     const structured = {};
     for (let y = 1; y <= maxYear; y++) {
-      const yearLabel = `${y}${y === 1 ? 'st' : y === 2 ? 'nd' : y === 3 ? 'rd' : 'th'} Year`;
+      const yearLabel = `${y}${
+        y === 1 ? "st" : y === 2 ? "nd" : y === 3 ? "rd" : "th"
+      } Year`;
       structured[yearLabel] = { "1st Sem": [], "2nd Sem": [] };
     }
 
-    // 5️⃣ Add enrolled subjects
-    enrolledSubjects.forEach(subj => {
-      const yearLabel = `${subj.year_level}${subj.year_level === 1 ? 'st' : subj.year_level === 2 ? 'nd' : subj.year_level === 3 ? 'rd' : 'th'} Year`;
-      const semKey = `${subj.semester} Sem`;
-      structured[yearLabel][semKey].push({
-        ...subj,
-        status: 'enrolled'
-      });
+    // Add enrolled
+    enrolledSubjects.forEach((subj) => {
+      const yl = `${subj.year_level}${
+        subj.year_level === 1
+          ? "st"
+          : subj.year_level === 2
+          ? "nd"
+          : subj.year_level === 3
+          ? "rd"
+          : "th"
+      } Year`;
+      const sem = `${subj.semester} Sem`;
+      structured[yl][sem].push({ ...subj, status: "enrolled" });
     });
 
-    // 6️⃣ Add pending subjects
-    pendingSubjects.forEach(p => {
-      const yearLabel = `${p.year_level}${p.year_level === 1 ? 'st' : p.year_level === 2 ? 'nd' : p.year_level === 3 ? 'rd' : 'th'} Year`;
-      const semKey = `${p.semester} Sem`;
-      structured[yearLabel][semKey].push({
+    // Add pending
+    pendingSubjects.forEach((p) => {
+      const yl = `${p.year_level}${
+        p.year_level === 1
+          ? "st"
+          : p.year_level === 2
+          ? "nd"
+          : p.year_level === 3
+          ? "rd"
+          : "th"
+      } Year`;
+      const sem = `${p.semester} Sem`;
+      structured[yl][sem].push({
         ...p,
-        grade: '',
-        remarks: '',
-        academic_year: '',
-        status: 'pending'
+        grade: "",
+        remarks: "",
+        academic_year: "",
+        status: "pending",
       });
     });
 
@@ -157,133 +204,172 @@ export const getStudentByUserId = async (req, res) => {
           full_name: student.full_name,
           school_id: student.school_id,
           enrollment_type: student.enrollment_type,
-          status: student.status
+          status: student.status,
         },
-        subjects: structured
-      }
+        subjects: structured,
+      },
     });
-
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, error: err.message });
   }
 };
 
-
+/* -------------------------------------------------------
+   APPROVE STUDENT + ASSIGN SUBJECTS
+-------------------------------------------------------- */
 export const approveStudent = async (req, res) => {
-  const { schoolId, subjects } = req.body;
-  if (!schoolId || !subjects?.length)
-    return res.status(400).json({ success: false, error: "Missing required fields" });
+  const schoolId = req.params.schoolId;
+  const { subjects } = req.body;
+
+  if (!subjects || !subjects.length) {
+    return res.status(400).json({
+      success: false,
+      error: "No subjects provided."
+    });
+  }
 
   try {
-    // Get student
-    const [studentRows] = await studentDB.query(
-      'SELECT id FROM students WHERE school_id = ? LIMIT 1',
+    // 1. Check if student exists in registration.students (userDB)
+    const [studentRows] = await userDB.query(
+      `SELECT * FROM students WHERE school_id = ? LIMIT 1`,
       [schoolId]
     );
-    if (!studentRows.length)
-      return res.status(404).json({ success: false, error: "Student not found" });
 
-    const studentId = studentRows[0].id;
+    if (!studentRows.length) {
+      return res.status(404).json({
+        success: false,
+        error: "Student not found in registration students."
+      });
+    }
 
-    // Active academic year
-    const [activeYearRows] = await studentDB.query(
-      'SELECT id FROM academic_years WHERE status="open" ORDER BY created_at DESC LIMIT 1'
+    // 2. Get active academic year
+    const [activeYear] = await studentDB.query(
+      `SELECT id FROM academic_years WHERE status='open' LIMIT 1`
     );
-    const activeYearId = activeYearRows.length ? activeYearRows[0].id : 1;
 
-    // Keep track of failed subjects
+    if (!activeYear.length) {
+      return res.status(400).json({
+        success: false,
+        error: "No active academic year found."
+      });
+    }
+
+    const activeYearId = activeYear[0].id;
+
     const failedSubjects = [];
 
-    // Enroll subjects and assign teachers
+    // 3. Process each subject being approved
     for (const s of subjects) {
       const { subjectId, teacherId, semester, yearLevel } = s;
 
-      if (!subjectId || !teacherId || !semester || !yearLevel) {
-        failedSubjects.push({ ...s, error: "Missing required fields" });
-        continue;
-      }
+      const sem = String(semester);
+      const yl = Number(yearLevel);
 
       try {
-        // Enroll student
+        // 3A. Insert into enrollments (NO student_id)
         await studentDB.query(
           `INSERT INTO enrollments (
-            student_id, school_id, subject_id, teacher_id, academic_year_id, semester, year_level, status
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, 'enrolled')
-          ON DUPLICATE KEY UPDATE
-            status='enrolled',
-            year_level=VALUES(year_level),
-            teacher_id=VALUES(teacher_id),
-            academic_year_id=VALUES(academic_year_id),
-            semester=VALUES(semester)`,
-          [studentId, schoolId, subjectId, teacherId, activeYearId, semester, yearLevel]
+             school_id, subject_id, teacher_id,
+             academic_year_id, semester, year_level, status
+           )
+           VALUES (?, ?, ?, ?, ?, ?, 'enrolled')
+           ON DUPLICATE KEY UPDATE
+             teacher_id = VALUES(teacher_id),
+             semester = VALUES(semester),
+             year_level = VALUES(year_level),
+             status = 'enrolled'`,
+          [
+            schoolId,
+            subjectId,
+            teacherId,
+            activeYearId,
+            sem,
+            yl
+          ]
         );
 
-        // Assign teacher to subject
+        // 3B. Insert into teacher_subjects
         await studentDB.query(
           `INSERT INTO teacher_subjects (teacher_id, subject_id)
            VALUES (?, ?)
-           ON DUPLICATE KEY UPDATE teacher_id = VALUES(teacher_id)`,
+           ON DUPLICATE KEY UPDATE 
+             teacher_id = VALUES(teacher_id)`,
           [teacherId, subjectId]
         );
 
       } catch (err) {
-        failedSubjects.push({ ...s, error: err.message });
+        console.error("❌ SUBJECT INSERT ERROR DETAILS:", {
+          subjectId,
+          teacherId,
+          semester: sem,
+          yearLevel: yl,
+          message: err.message,
+          sqlMessage: err.sqlMessage,
+        });
+
+        failedSubjects.push({
+          subjectId,
+          teacherId,
+          semester: sem,
+          yearLevel: yl,
+          error: err.message,
+          sqlMessage: err.sqlMessage
+        });
       }
     }
 
-    // Update student status
-    await studentDB.query('UPDATE students SET status="enrolled" WHERE id=?', [studentId]);
-
-    if (failedSubjects.length) {
-      return res.status(207).json({
-        success: false,
-        message: "Some subjects failed to enroll",
-        failedSubjects
-      });
-    }
-
-    // Update pending_students
-    await studentDB.query(`
-      UPDATE pending_students
-      SET status = 'approved' 
-      WHERE school_id = ? 
-        AND semester IN ('1st', '2nd')
-        AND status = 'pending'`,
+    // 4. Update student's registration status
+    await userDB.query(
+      `UPDATE students SET status='registration_approved' WHERE school_id=?`,
       [schoolId]
     );
 
-    res.json({ success: true, message: "All subjects enrolled and teachers assigned successfully" });
+    // 5. Final response
+    res.json({
+      success: true,
+      message:
+        failedSubjects.length > 0
+          ? "Enrollment completed, but some subjects failed."
+          : "Enrollment completed successfully.",
+      failedSubjects
+    });
 
   } catch (err) {
-    console.error("❌ Error approving student:", err);
-    res.status(500).json({ success: false, error: "Failed to approve/enroll student" });
+    console.log("❌ SUBJECT INSERT ERROR:", err.sqlMessage || err.message);
+
+    res.status(500).json({
+      success: false,
+      error: "Enrollment failed due to server error."
+    });
   }
 };
 
 
-// controllers/studentController.js
 
+/* -------------------------------------------------------
+   CREATE STUDENT (after registration)
+-------------------------------------------------------- */
 export const createStudent = async (req, res) => {
   const { full_name, email, enrollment_type, course_id } = req.body;
   const userId = req.user?.id || req.user?.userId;
 
-  if (!full_name || !email || !enrollment_type || !userId || !course_id) {
-    return res.status(400).json({ error: 'Missing required fields' });
-  }
+  if (!full_name || !email || !enrollment_type || !userId || !course_id)
+    return res.status(400).json({ error: "Missing required fields" });
 
   try {
-    // 1️⃣ Check if student already exists for this user
-    const [existing] = await studentDB.query(
+    // Check if exists
+    const [existing] = await userDB.query(
       "SELECT * FROM students WHERE user_id = ? LIMIT 1",
       [userId]
     );
-    if (existing.length) {
-      return res.status(400).json({ error: "Student already exists for this account" });
-    }
+    if (existing.length)
+      return res
+        .status(400)
+        .json({ error: "Student already exists for this account" });
 
-    // 2️⃣ Insert student (school_id will be updated later)
-    const [result] = await studentDB.query(
+    // Insert
+    const [result] = await userDB.query(
       `INSERT INTO students 
         (full_name, email, school_id, enrollment_type, user_id, course_id, status) 
         VALUES (?, ?, NULL, ?, ?, ?, 'pending')`,
@@ -292,13 +378,13 @@ export const createStudent = async (req, res) => {
 
     const newId = result.insertId;
 
-    // 3️⃣ Generate school_id based on new ID
-    const schoolId = String(newId).padStart(6, "0"); 
+    // Generate school_id
+    const schoolId = String(newId).padStart(6, "0");
 
-    await studentDB.query(
-      `UPDATE students SET school_id = ? WHERE id = ?`,
-      [schoolId, newId]
-    );
+    await userDB.query("UPDATE students SET school_id = ? WHERE id = ?", [
+      schoolId,
+      newId,
+    ]);
 
     res.status(201).json({
       success: true,
@@ -307,45 +393,56 @@ export const createStudent = async (req, res) => {
       full_name,
       email,
       enrollment_type,
-      status: 'pending',
+      status: "pending",
       user_id: userId,
       course_id,
     });
-
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Insert failed', details: err.message });
+    res.status(500).json({ error: "Insert failed", details: err.message });
   }
 };
 
-// Enroll a single subject (automatic student detection)
-
+/* -------------------------------------------------------
+   ENROLL STUDENT TO ONE SUBJECT
+-------------------------------------------------------- */
 export const enrollStudent = async (req, res) => {
   const userId = req.user?.id;
   const { subjectId, semester } = req.body;
 
-  if (!userId) return res.status(401).json({ success: false, message: "Unauthorized" });
-  if (!subjectId || !semester) return res.status(400).json({ message: 'SubjectId and semester are required' });
+  if (!userId)
+    return res.status(401).json({ success: false, message: "Unauthorized" });
+  if (!subjectId || !semester)
+    return res
+      .status(400)
+      .json({ message: "SubjectId and semester are required" });
 
   try {
-    // 1️⃣ Get student by userId
-    const [studentRows] = await studentDB.query(
-      'SELECT id, school_id, status FROM students WHERE user_id = ? LIMIT 1',
+    // Student from userDB
+    const [studentRows] = await userDB.query(
+      "SELECT id, school_id, status FROM students WHERE user_id = ? LIMIT 1",
       [userId]
     );
-    if (!studentRows.length) return res.status(404).json({ success: false, message: 'Student not found' });
+
+    if (!studentRows.length)
+      return res
+        .status(404)
+        .json({ success: false, message: "Student not found" });
 
     const schoolId = studentRows[0].school_id;
 
-    // 2️⃣ Get active academic year
+    // Active year
     const [activeYear] = await studentDB.query(
       'SELECT id FROM academic_years WHERE status = "open" ORDER BY created_at DESC LIMIT 1'
     );
-    if (!activeYear.length) return res.status(400).json({ success: false, message: "No active academic year found" });
+    if (!activeYear.length)
+      return res
+        .status(400)
+        .json({ success: false, message: "No active academic year found" });
 
-    const academic_year_id = activeYear[0].id; // ✅ fixed
+    const academic_year_id = activeYear[0].id;
 
-    // 3️⃣ Insert or update enrollment
+    // Insert enrollment
     await studentDB.query(
       `INSERT INTO enrollments (
         school_id, subject_id, semester, academic_year_id, status
@@ -357,38 +454,34 @@ export const enrollStudent = async (req, res) => {
       [schoolId, subjectId, semester, academic_year_id]
     );
 
-    // 4️⃣ Update student's status to enrolled
-    if (studentRows[0].status !== 'enrolled') {
-      await studentDB.query(
-        'UPDATE students SET status = "enrolled" WHERE school_id = ?',
+    // Update status in userDB
+    if (studentRows[0].status !== "enrolled") {
+      await userDB.query(
+        "UPDATE students SET status = 'enrolled' WHERE school_id = ?",
         [schoolId]
       );
     }
 
-    res.json({ success: true, message: 'Enrolled Successfully and student status updated' });
+    res.json({
+      success: true,
+      message: "Enrolled Successfully and student status updated",
+    });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ success: false, message: 'Database Error', error: err.message });
+    res.status(500).json({
+      success: false,
+      message: "Database Error",
+      error: err.message,
+    });
   }
 };
 
-
-// Get all pending students
-// controllers/studentController.js
+/* -------------------------------------------------------
+   GET PENDING STUDENTS
+-------------------------------------------------------- */
 export const getPendingStudents = async (req, res) => {
   try {
-    // 1️⃣ Get active academic year (optional, for fallback)
-    const [activeYearRows] = await studentDB.query(
-      `SELECT id, semester, year 
-        FROM academic_years 
-        WHERE status = "open" 
-        ORDER BY created_at DESC 
-        LIMIT 1`
-    );
-    const activeYear = activeYearRows.length ? activeYearRows[0] : null;
-
-    // 2️⃣ Get pending students from pending_students table
-    const [students] = await studentDB.query(
+    const [pending] = await studentDB.query(
       `SELECT 
           ps.id AS pending_id,
           ps.student_id,
@@ -400,39 +493,34 @@ export const getPendingStudents = async (req, res) => {
           ps.created_at,
           s.full_name,
           s.email,
-          s.enrollment_type,
-          c.name AS course
+          s.course_id
         FROM pending_students ps
-        JOIN students s ON s.id = ps.student_id
-        LEFT JOIN courses c ON s.course_id = c.id
+        JOIN ${process.env.DB_USERS_NAME}.students s 
+             ON s.id = ps.student_id
         ORDER BY ps.created_at DESC`
     );
 
-    // 3️⃣ Fill in missing semester/academic year if needed
-    students.forEach((student) => {
-      if (!student.semester && activeYear) student.semester = activeYear.semester;
-      if (!student.academic_year_id && activeYear) student.academic_year_id = activeYear.id;
-      if (!student.academic_year && activeYear) student.academic_year = activeYear.year;
-    });
+    res.json({ success: true, data: pending });
 
-    res.json({ success: true, data: students });
   } catch (err) {
-    console.error(err);
+    console.error("❌ Get pending students error:", err);
     res.status(500).json({ success: false, message: err.message });
   }
 };
 
 
-// controllers/studentController.js
+/* -------------------------------------------------------
+   CREATE PENDING STUDENT RECORD
+-------------------------------------------------------- */
 export const createPendingStudents = async (req, res) => {
   try {
-    const { student_id, school_id, academic_year_id, semester, year_level } = req.body;
+    const { student_id, school_id, academic_year_id, semester, year_level } =
+      req.body;
 
     if (!student_id || !school_id || !academic_year_id || !semester || !year_level) {
       return res.status(400).json({ success: false, error: "Missing required fields" });
     }
 
-    // insert into pending_students table
     const [result] = await studentDB.query(
       `INSERT INTO pending_students 
         (student_id, school_id, academic_year_id, semester, year_level, status) 
@@ -447,187 +535,195 @@ export const createPendingStudents = async (req, res) => {
   }
 };
 
-// Get all approved/enrolled students
+/* -------------------------------------------------------
+   GET ENROLLED STUDENTS
+-------------------------------------------------------- */
 export const getEnrolledStudents = async (req, res) => {
   try {
-    // Get active academic year
-    const [activeYearRows] = await studentDB.query(
-      'SELECT id, semester, year FROM academic_years WHERE status = "open" ORDER BY created_at DESC LIMIT 1'
-    );
-    const activeYear = activeYearRows.length ? activeYearRows[0] : null;
+    const [rows] = await studentDB.query(`
+      SELECT
+        st.full_name,
+        st.school_id,
+        st.email,
+        st.course_id,
+        e.semester,
+        e.year_level,
+        e.academic_year_id,
+        ay.year AS academic_year
+      FROM enrollments e
 
-    const [students] = await studentDB.query(
-      `SELECT 
-          s.id,
-          s.school_id, 
-          s.full_name, 
-          s.email, 
-          s.status, 
-          s.enrollment_type, 
-          c.name AS course,
-          e.semester,
-          MIN(e.year_level) AS year_level,
-          e.academic_year_id,
-          ay.year AS academic_year,
-          MIN(e.created_at) AS date_enrolled
-        FROM students s
-        JOIN courses c ON s.course_id = c.id
-        JOIN enrollments e ON e.school_id = s.school_id AND e.status = 'enrolled'
-        LEFT JOIN academic_years ay ON ay.id = e.academic_year_id
-        WHERE s.status IN ('enrolled', 'active')
-        GROUP BY s.id, s.school_id, s.full_name, s.email, s.status, s.enrollment_type, c.name, e.semester, e.academic_year_id, ay.year`
-    );
+      JOIN ${process.env.DB_USERS_NAME}.students st
+        ON st.school_id = e.school_id
 
-    const data = students.map(student => ({
-      ...student,
-      semester: student.semester || (activeYear ? activeYear.semester : 'N/A'),
-      academic_year: student.academic_year || (activeYear ? activeYear.year : 'N/A'),
-      year_level: student.year_level || 1,
-      date_enrolled: student.date_enrolled ? new Date(student.date_enrolled) : null,
-    }));
+      LEFT JOIN academic_years ay 
+        ON ay.id = e.academic_year_id
 
-    res.json({ success: true, data });
+      WHERE e.status = 'enrolled'
+      ORDER BY e.year_level, e.semester
+    `);
+
+    res.json({ success: true, data: rows });
+
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false, message: err.message });
+    console.error("GET ENROLLED STUDENTS ERROR:", err);
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: err.message,
+    });
   }
 };
 
-// GET /teachers/:teacherId/subjects/:subjectId/students
+
+
+
+
+/* -------------------------------------------------------
+   TEACHER → THEIR STUDENTS IN A SUBJECT
+-------------------------------------------------------- */
 export const getEnrolledStudentsBySubject = async (req, res) => {
   try {
     const { subjectId } = req.params;
-    console.log("Fetching students for subjectId:", subjectId);
 
     const [rows] = await studentDB.query(
-      `SELECT 
-          st.school_id, 
-          st.full_name,
-          g.id AS grade_id,
-          g.grade,
-          g.remarks,
-          e.teacher_id,
-          e.academic_year_id,
-          s.code AS subject_code,
-          s.name AS subject_name
-        FROM enrollments e
-        JOIN students st ON st.school_id = e.school_id
-        JOIN subjects s ON s.id = e.subject_id
-        LEFT JOIN grades g ON g.student_id = st.school_id AND g.subject_id = e.subject_id
-        WHERE e.subject_id = ? AND e.status = 'enrolled'
-        ORDER BY st.full_name`,
+      `
+      SELECT 
+        st.school_id,
+        st.full_name,
+        g.id AS grade_id,
+        g.grade,
+        g.remarks,
+        e.teacher_id,
+        e.academic_year_id,
+        s.code AS subject_code,
+        s.name AS subject_name
+      FROM enrollments e
+
+      JOIN ${process.env.DB_USERS_NAME}.students st
+        ON st.school_id = e.school_id
+
+      JOIN subjects s
+        ON s.id = e.subject_id
+
+      LEFT JOIN grades g 
+        ON g.student_id = st.school_id
+       AND g.subject_id = e.subject_id
+
+      WHERE e.subject_id = ?
+        AND e.status = 'enrolled'
+      ORDER BY st.full_name
+      `,
       [subjectId]
     );
 
     res.json({ success: true, students: rows });
+
   } catch (err) {
     console.error("Error fetching enrolled students:", err);
-    res.status(500).json({ success: false, message: "Database error", error: err.message });
+    res.status(500).json({
+      success: false,
+      message: "Database error",
+      error: err.message,
+    });
   }
 };
 
-export const getStudentSubjects = async (req, res) => {
-  const studentId = req.params.id;
 
-  if (!studentId) {
-    return res.status(400).json({ success: false, error: "Student ID required" });
-  }
+
+
+/* -------------------------------------------------------
+   GET STUDENT'S ENROLLED SUBJECTS ONLY
+-------------------------------------------------------- */
+export const getStudentSubjects = async (req, res) => {
+  const schoolId = req.params.id;
 
   try {
-    const [subjects] = await studentDB.query(`
+    const [rows] = await studentDB.query(`
       SELECT 
         s.id,
         s.code,
         s.name,
         s.units,
-        e.year_level,
-        e.status AS status,
         e.semester,
+        e.year_level,
         ay.year AS academic_year
       FROM enrollments e
-      JOIN subjects s ON s.id = e.subject_id
-      LEFT JOIN academic_years ay ON ay.id = e.academic_year_id
-      WHERE e.student_id = ? AND e.status = 'enrolled'
-      ORDER BY e.year_level, e.semester
-    `, [studentId]);
 
-    res.json({ success: true, data: subjects });
+      JOIN subjects s 
+        ON s.id = e.subject_id
+
+      LEFT JOIN academic_years ay
+        ON ay.id = e.academic_year_id
+
+      WHERE e.school_id = ?
+        AND e.status = 'enrolled'
+      ORDER BY e.year_level, e.semester
+    `, [schoolId]);
+
+    res.json({ success: true, data: rows });
+
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, error: "Failed to fetch subjects" });
   }
 };
 
-export const getStudentBySubjects = async (req, res) => {
-  const { school_id } = req.params; // Student’s unique school_id
 
-  if (!school_id) {
-    return res.status(400).json({ 
-      success: false, 
-      error: "Student school_id is required" 
-    });
-  }
+/* -------------------------------------------------------
+   GET STUDENT + SUBJECTS (BY SCHOOL ID)
+-------------------------------------------------------- */
+export const getStudentBySubjects = async (req, res) => {
+  const { school_id } = req.params;
 
   try {
-    // 1️⃣ Fetch student info
-    const [studentRows] = await studentDB.query(
-      `SELECT id, full_name, school_id 
+    const [studentRows] = await userDB.query(
+      `SELECT id, full_name, school_id
        FROM students 
        WHERE school_id = ?`,
       [school_id]
     );
 
     if (!studentRows.length) {
-      return res.status(404).json({ 
-        success: false, 
-        error: "Student not found" 
-      });
+      return res.status(404).json({ success: false, error: "Student not found" });
     }
 
     const student = studentRows[0];
 
-    // 2️⃣ Fetch subjects where student is enrolled
-    const [subjects] = await studentDB.query(
-      `SELECT 
-          s.id,
-          s.code,
-          s.name,
-          s.units,
-          s.year_level,
-          e.semester,
-          e.status AS status,
-          e.academic_year_id,
-          ay.year AS academic_year
-        FROM enrollments e
-        JOIN subjects s ON s.id = e.subject_id
-        LEFT JOIN academic_years ay ON ay.id = e.academic_year_id
-        WHERE e.school_id = ? AND e.status = 'enrolled'
-        ORDER BY s.year_level, e.semester`,
-      [school_id]
-    );
+    const [subjects] = await studentDB.query(`
+      SELECT 
+        s.id,
+        s.code,
+        s.name,
+        s.units,
+        e.semester,
+        e.year_level,
+        ay.year AS academic_year
+      FROM enrollments e
+      JOIN subjects s 
+        ON s.id = e.subject_id
+      LEFT JOIN academic_years ay 
+        ON ay.id = e.academic_year_id
+      WHERE e.school_id = ?
+        AND e.status = 'enrolled'
+      ORDER BY s.year_level, e.semester
+    `, [school_id]);
 
-    // 3️⃣ Return combined result
-    res.json({
-      success: true,
-      student,
-      subjects
-    });
+    res.json({ success: true, student, subjects });
 
   } catch (err) {
-    console.error("❌ Error in getStudentBySubjects:", err);
-    res.status(500).json({ 
-      success: false, 
-      error: "Database error", 
-      message: err.message 
-    });
+    console.error("Error:", err);
+    res.status(500).json({ success: false, error: err.message });
   }
 };
 
 
-
+/* -------------------------------------------------------
+   FILTERED STUDENTS
+-------------------------------------------------------- */
 export const getStudentsFiltered = async (req, res) => {
   try {
     const { user_id } = req.query;
+
     let query = "SELECT * FROM students";
     const params = [];
 
@@ -636,7 +732,8 @@ export const getStudentsFiltered = async (req, res) => {
       params.push(user_id);
     }
 
-    const [students] = await studentDB.query(query, params);
+    const [students] = await userDB.query(query, params);
+
     res.json({ success: true, data: students });
   } catch (err) {
     console.error("Error fetching students:", err);
@@ -644,12 +741,16 @@ export const getStudentsFiltered = async (req, res) => {
   }
 };
 
+/* -------------------------------------------------------
+   GET STUDENT GRADES
+-------------------------------------------------------- */
 export const getStudentGrades = async (req, res) => {
   const { school_id } = req.params;
 
   try {
     const [rows] = await studentDB.query(
-      `SELECT 
+      `
+      SELECT 
           s.id AS subject_id,
           s.code,
           s.name,
@@ -662,17 +763,52 @@ export const getStudentGrades = async (req, res) => {
        JOIN subjects s ON s.id = e.subject_id
        LEFT JOIN grades g 
          ON g.subject_id = s.id 
-        AND g.student_id = e.student_id
-       WHERE e.school_id = ? AND e.status = 'enrolled'
-       ORDER BY e.year_level, e.semester`,
+        AND g.student_id = e.school_id   -- FIXED
+       WHERE e.school_id = ? 
+         AND e.status = 'enrolled'
+       ORDER BY e.year_level, e.semester
+      `,
       [school_id]
     );
 
     res.json({ success: true, data: rows });
-
   } catch (err) {
     console.error("Error fetching student grades:", err);
     res.status(500).json({ success: false, error: err.message });
   }
 };
+
+
+// UPDATE COURSE ID BEFORE ENROLLMENT
+export const updateStudentCourse = async (req, res) => {
+  try {
+    const { student_id, course_id } = req.body;
+
+    if (!student_id || !course_id) {
+      return res.status(400).json({
+        success: false,
+        error: "student_id and course_id are required",
+      });
+    }
+
+    // Save selected course into registration.students
+    await userDB.query(
+      `UPDATE students SET course_id = ? WHERE id = ?`,
+      [course_id, student_id]
+    );
+
+    res.json({
+      success: true,
+      message: "Course updated in registration.students",
+    });
+
+  } catch (err) {
+    console.error("Update course error:", err);
+    res.status(500).json({
+      success: false,
+      error: "Failed to update course_id",
+    });
+  }
+};
+
 

@@ -12,7 +12,8 @@ import {
   getEnrolledStudentsBySubject,
   getStudentSubjects,
   getStudentBySubjects,
-  getStudentGrades
+  getStudentGrades,
+  updateStudentCourse
 } from '../controllers/studentController.js';
 
 const router = express.Router();
@@ -52,5 +53,8 @@ router.get('/:id/subjects', verifyToken, getStudentSubjects);
 router.get('/school/:school_id/subjects', verifyToken, getStudentBySubjects);
 
 router.get('/:school_id/grades', verifyToken, getStudentGrades)
+
+router.post('/update-course', updateStudentCourse);
+
 
 export default router;

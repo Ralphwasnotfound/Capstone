@@ -24,16 +24,18 @@ export async function registerTeacher(payload){
     }
 }
 
-export async function registerStudent(payload) {
-    try {
-        const response = await api.post('/auth/students', payload)
-        const { user, token } = response.data
-        return { success:true, user, token}
-    } catch (err) {
-        console.error('Student Registration Error:', err)
-        return { success: false, error: err.response?.data?.error || 'Student Registration Failed'}
-    }
-}
+
+export const registerStudent = async (payload) => {
+  try {
+    const { data } = await api.post("/auth/students", payload);
+    return { success: true, ...data };
+  } catch (err) {
+    return {
+      success: false,
+      error: err.response?.data?.error || "Registration failed"
+    };
+  }
+};
 
 // DELETE USER
 export async function deleteUserbyId (id) {

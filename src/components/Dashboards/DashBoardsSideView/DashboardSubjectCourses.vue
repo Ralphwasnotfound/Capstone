@@ -47,17 +47,16 @@
           </button>
 
           <router-link
-            v-else
-            :to="student?.school_id
-              ? `/student-enrollment/student?year=${year}&semester=${semester}`
-              : `/student-enrollment?year=${year}&semester=${semester}`"
-          >
-            <button
-              class="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-6 py-3 rounded-xl shadow-lg w-full mb-2"
-            >
-              Enroll Now – {{ semester }}
-            </button>
-          </router-link>
+  v-else
+  :to="`/student-enrollment/student?year=${year}&semester=${semester}`"
+>
+  <button
+    class="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-6 py-3 rounded-xl shadow-lg w-full mb-2"
+  >
+    Enroll Now – {{ semester }}
+  </button>
+</router-link>
+
 
           <!-- Subjects for this semester -->
           <SubjectsCourses

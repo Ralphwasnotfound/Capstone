@@ -2,17 +2,21 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { userDB, studentDB } from '../db.js';
 
-// ---------- GET STUDENTS ----------
+// ======================================================
+// GET STUDENTS  (from userDB)
+// ======================================================
 export const getStudents = async (req, res) => {
     try {
         const { user_id } = req.query;
         let query = "SELECT * FROM students";
         const params = [];
+
         if (user_id) {
             query += " WHERE user_id = ?";
             params.push(user_id);
         }
-        const [students] = await studentDB.query(query, params);
+
+        const [students] = await userDB.query(query, params);
         res.json({ success: true, data: students });
     } catch (error) {
         console.error("Error fetching students:", error);
@@ -20,44 +24,78 @@ export const getStudents = async (req, res) => {
     }
 };
 
-// ---------- REGISTER USER ----------
+// ======================================================
+// REGISTER USER (student only)
+// ======================================================
 export const registerUser = async (req, res) => {
-    const { email, password, role = 'student', contact = null } = req.body;
+    const { 
+        full_name, 
+        email, 
+        password, 
+        role = 'student', 
+        contact = null
+    } = req.body;
 
-    if (!email || !password)
-        return res.status(400).json({ error: 'Email and Password are required' });
-
-    if (role === 'teacher')
-        return res.status(403).json({ error: 'Teacher registration is restricted to admin only.' });
+    if (!email || !password || !full_name)
+        return res.status(400).json({ error: 'Full name, email, and password are required' });
 
     try {
-        const [existing] = await userDB.query('SELECT * FROM users WHERE email = ?', [email]);
-        if (existing.length > 0) return res.status(409).json({ error: 'Email already in use' });
+        // Check if email already exists
+        const [existing] = await userDB.query(
+            'SELECT * FROM users WHERE email = ?',
+            [email]
+        );
+        if (existing.length > 0)
+            return res.status(409).json({ error: 'Email already in use' });
 
         const hashedPassword = await bcrypt.hash(password, 10);
 
+        // Create the user
         const [userResult] = await userDB.query(
-            'INSERT INTO users (email, password, role, contact) VALUES (?, ?, ?, ?)',
-            [email, hashedPassword, role, contact]
+            'INSERT INTO users (full_name, email, password, role, contact) VALUES (?, ?, ?, ?, ?)',
+            [full_name, email, hashedPassword, role, contact]
         );
 
         const userId = userResult.insertId;
 
-        // Optionally create student profile
+        // AUTO-CREATE student profile (minimal)
         if (role === 'student') {
-            await studentDB.query(
-                `INSERT INTO students (user_id, contact, status) VALUES (?, ?, "registration_approved")`,
-                [userId, contact]
+
+            const [studentInsert] = await userDB.query(
+                `INSERT INTO students 
+                (user_id, full_name, email, contact, status) 
+                 VALUES (?, ?, ?, ?, "registration_approved")`,
+                [userId, full_name, email, contact]
+            );
+
+            const studentId = studentInsert.insertId;
+
+            // Generate school_id (000001 format)
+            const schoolId = String(studentId).padStart(6, "0");
+
+            await userDB.query(
+                `UPDATE students SET school_id = ? WHERE id = ?`,
+                [schoolId, studentId]
             );
         }
 
-        res.status(201).json({ message: 'Registration Successful', userId });
+        return res.status(201).json({
+            success: true,
+            message: "Registration Successful",
+            userId
+        });
+
     } catch (err) {
-        console.error('Registration Error:', err);
-        res.status(500).json({ error: 'Server Error' });
+        console.error("❌ Registration Error:", err);
+        return res.status(500).json({ error: "Server Error" });
     }
 };
 
+
+
+// ======================================================
+// CREATE TEACHER BY ADMIN
+// ======================================================
 export const createTeacherByAdmin = async (req, res) => {
   console.log("Incoming body:", req.body);
 
@@ -79,32 +117,29 @@ export const createTeacherByAdmin = async (req, res) => {
 
   if (!email) return res.status(400).json({ error: "Email is required" });
 
-  // ✅ Define defaultPassword here so it is always available
   const defaultPassword = "password123";
 
   try {
-    // Step 1: Check if user exists
+    // 1. check if already exists
     const [existingUser] = await userDB.query(
       "SELECT * FROM users WHERE email = ?",
       [email]
     );
-    if (existingUser.length > 0) {
+    if (existingUser.length > 0)
       return res.status(409).json({ error: "Email already exists in users table" });
-    }
 
-    // Step 2: Hash the default password
     const hashedPassword = await bcrypt.hash(defaultPassword, 10);
 
-    // Step 3: Insert into users table
+    // 2. create user
     const [result] = await userDB.query(
       "INSERT INTO users (email, password, role) VALUES (?, ?, ?)",
       [email, hashedPassword, "teacher"]
     );
-    const userId = result.insertId;
-    console.log("✅ Created user with ID:", userId);
 
-    // Step 4: Insert into teachers table
-    await studentDB.query(
+    const userId = result.insertId;
+
+    // 3. insert teacher profile
+    await userDB.query(
       `INSERT INTO teachers 
         (user_id, full_name, profile_picture, email, contact, address, bio, occupation, education, skills, specialization, status, credential_url, id_url)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -125,9 +160,7 @@ export const createTeacherByAdmin = async (req, res) => {
         id_url
       ]
     );
-    console.log("✅ Teacher successfully inserted!");
 
-    // ✅ Always return the default password
     return res.status(201).json({
       message: "Teacher created successfully",
       user_id: userId,
@@ -140,9 +173,9 @@ export const createTeacherByAdmin = async (req, res) => {
   }
 };
 
-
-
-// ---------- CHANGE PASSWORD ----------
+// ======================================================
+// CHANGE PASSWORD
+// ======================================================
 export const changePassword = async (req, res) => {
     const { userId, currentPassword, newPassword } = req.body;
 
@@ -164,13 +197,14 @@ export const changePassword = async (req, res) => {
     }
 };
 
-// ---------- LOGIN ----------
+// ======================================================
+// LOGIN USER
+// ======================================================
 export const loginUser = async (req, res) => {
     const { email, password } = req.body;
 
-    if (!email || !password) {
+    if (!email || !password)
         return res.status(400).json({ error: 'Email and Password are required' });
-    }
 
     try {
         const [rows] = await userDB.query('SELECT * FROM users WHERE email = ?', [email]);
@@ -180,30 +214,30 @@ export const loginUser = async (req, res) => {
         const match = await bcrypt.compare(password, user.password);
         if (!match) return res.status(401).json({ error: 'Invalid Email or Password' });
 
-        if (user.role === 'teacher') {
-            const [teacherRows] = await userDB.query(
-                'SELECT id, status, contact FROM teachers WHERE user_id = ?',
-                [user.id]
-            );
-            const teacher = teacherRows[0];
-            if (!teacher || teacher.status !== 'approved') {
-                return res.status(403).json({ error: 'Your account is not yet Approved.' });
-            }
-            user.teacher_id = teacher.id;
-            user.contact = teacher.contact; // ensure contact comes from teachers table
-        }
-
+        // attach student info
         if (user.role === 'student') {
-            const [studentRows] = await userDB.query(
+            const [stuRows] = await userDB.query(
                 'SELECT id, status, contact FROM students WHERE user_id = ?',
                 [user.id]
             );
-            const student = studentRows[0];
-            if (!student || !['approved', 'registration_approved'].includes(student.status)) {
+            const stu = stuRows[0];
+            if (!stu || !['approved', 'registration_approved'].includes(stu.status))
                 return res.status(403).json({ error: 'Your Account is not approved yet' });
-            }
-            user.student_id = student.id;
-            user.contact = student.contact; // ensure contact comes from students table
+            user.student_id = stu.id;
+            user.contact = stu.contact;
+        }
+
+        // attach teacher info
+        if (user.role === 'teacher') {
+            const [teaRows] = await userDB.query(
+                'SELECT id, status, contact FROM teachers WHERE user_id = ?',
+                [user.id]
+            );
+            const tea = teaRows[0];
+            if (!tea || tea.status !== 'approved')
+                return res.status(403).json({ error: 'Your account is not yet Approved.' });
+            user.teacher_id = tea.id;
+            user.contact = tea.contact;
         }
 
         const token = jwt.sign(
@@ -212,17 +246,18 @@ export const loginUser = async (req, res) => {
             { expiresIn: '30d' }
         );
 
-        delete user.password; // remove password from response
-        res.json({ message: 'Login Successful', token, user });
+        delete user.password;
 
+        res.json({ message: 'Login Successful', token, user });
     } catch (err) {
         console.error('Login Error:', err);
         res.status(500).json({ error: 'Server error' });
     }
 };
 
-
-// ---------- GET USERS ----------
+// ======================================================
+// GET USERS (admin)
+// ======================================================
 export const getUsers = async (req, res) => {
   try {
     const [users] = await userDB.query(`
@@ -263,9 +298,60 @@ export const getUsers = async (req, res) => {
   }
 };
 
+// ======================================================
+// DELETE USER
+// ======================================================
+export const deleteUser = async (req, res) => {
+    const { id } = req.params;
+    try {
+        const [result] = await userDB.query('DELETE FROM users WHERE id = ?', [id]);
+        if (result.affectedRows === 0)
+            return res.status(404).json({ error: 'User not Found' });
 
+        res.json({ message: 'User deleted successfully' });
+    } catch (err) {
+        console.error('Delete user error:', err);
+        res.status(500).json({ error: 'Server error during Deletion' });
+    }
+};
 
-// ---------- CREATE DEFAULT ADMIN ----------
+// ======================================================
+// UPDATE TEACHER PROFILE
+// ======================================================
+export const updateTeacherProfile = async (req, res) => {
+    const userId = req.params.id;
+
+    const {
+        full_name, profile_picture, email, contact,
+        street, barangay, city, province, zipcode,
+        bio, occupation, education, skills, specialization, status,
+        credential_url, id_url
+    } = req.body;
+
+    try {
+        await userDB.query(
+            `UPDATE teachers
+             SET full_name=?, profile_picture=?, email=?, contact=?,
+                 street=?, barangay=?, city=?, province=?, zipcode=?,
+                 bio=?, occupation=?, education=?, skills=?, specialization=?,
+                 status=?, credential_url=?, id_url=?
+             WHERE user_id=?`,
+            [full_name, profile_picture, email, contact,
+             street, barangay, city, province, zipcode,
+             bio, occupation, education, skills, specialization,
+             status, credential_url, id_url, userId]
+        );
+
+        res.json({ success: true, message: 'Profile updated successfully' });
+    } catch (err) {
+        console.error('Update profile error:', err);
+        res.status(500).json({ error: 'Server error updating profile' });
+    }
+};
+
+// ======================================================
+// CREATE DEFAULT ADMIN
+// ======================================================
 export const createDefaultAdmin = async () => {
     const defaultEmail = 'admin@default.com';
     const defaultPassword = 'admin123';
@@ -282,48 +368,5 @@ export const createDefaultAdmin = async () => {
         console.log('Default admin created');
     } else {
         console.log('Default admin already exists');
-    }
-};
-
-// ---------- DELETE USER ----------
-export const deleteUser = async (req, res) => {
-    const { id } = req.params;
-    try {
-        const [result] = await userDB.query('DELETE FROM users WHERE id = ?', [id]);
-        if (result.affectedRows === 0) return res.status(404).json({ error: 'User not Found' });
-        res.json({ message: 'User deleted successfully' });
-    } catch (err) {
-        console.error('Delete user error:', err);
-        res.status(500).json({ error: 'Server error during Deletion' });
-    }
-};
-
-// ---------- UPDATE TEACHER PROFILE ----------
-export const updateTeacherProfile = async (req, res) => {
-    const userId = req.params.id;
-    const {
-        full_name, profile_picture, email, contact,
-        street, barangay, city, province, zipcode,
-        bio, occupation, education, skills, specialization, status,
-        credential_url, id_url
-    } = req.body;
-
-    try {
-        await studentDB.query(
-            `UPDATE teachers
-             SET full_name=?, profile_picture=?, email=?, contact=?,
-                 street=?, barangay=?, city=?, province=?, zipcode=?,
-                 bio=?, occupation=?, education=?, skills=?, specialization=?,
-                 status=?, credential_url=?, id_url=?
-             WHERE user_id=?`,
-            [full_name, profile_picture, email, contact,
-             street, barangay, city, province, zipcode,
-             bio, occupation, education, skills, specialization,
-             status, credential_url, id_url, userId]
-        );
-        res.json({ success: true, message: 'Profile updated successfully' });
-    } catch (err) {
-        console.error('Update profile error:', err);
-        res.status(500).json({ error: 'Server error updating profile' });
     }
 };

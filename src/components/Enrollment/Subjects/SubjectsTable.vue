@@ -135,7 +135,7 @@ export default {
 
     try {
       const yearRes = await axios.get(
-        `http://localhost:3000/academic-years/active?schoolId=${this.student.school_id}`,
+        `http://localhost:3000/academic-years/active?school_id=${schoolIdParam}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -161,7 +161,7 @@ export default {
 
     // 4️⃣ Fetch subjects for this student's course (dynamic + correct)
     const subjectsRes = await axios.get(
-      `http://localhost:3000/subjects/course/${this.student.course_id}?studentId=${this.student.school_id}&year_level=${yearLevel}&semester=${semester}`,
+      `http://localhost:3000/subjects/course/${this.student.course_id}?studentId=${schoolIdParam}&year_level=${yearLevel}&semester=${semester}`,
       { headers: { Authorization: `Bearer ${token}` } }
     );
 
@@ -225,7 +225,7 @@ export default {
   try {
     // ✅ Updated URL to match your backend
     const res = await axios.put(
-      `http://localhost:3000/students/${this.student.id}/approve`,
+      `http://localhost:3000/students/${this.student.school_id}/approve`,
       payload,
       { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
     );

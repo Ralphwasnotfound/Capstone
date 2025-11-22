@@ -1,27 +1,30 @@
 // controllers/teachers/teacherDashboardController.js
-import { studentDB, userDB } from '../../db.js';
+import { studentDB, userDB } from "../../db.js";
 
+/* =====================================================
+   GET TEACHER SUBJECTS BY user_id
+===================================================== */
 export const getTeacherSubjects = async (req, res) => {
-  const userId = req.query.user_id; // get user_id from query
+  const userId = req.query.user_id;
 
   if (!userId) {
     return res.status(400).json({ success: false, message: "user_id is required" });
   }
 
   try {
-    // Step 1: Get teacher_id from user_id
-    const [teacherRows] = await studentDB.query(
+    // Get teacher from userDB
+    const [teacherRows] = await userDB.query(
       "SELECT id FROM teachers WHERE user_id = ?",
       [userId]
     );
 
-    if (teacherRows.length === 0) {
+    if (!teacherRows.length) {
       return res.status(404).json({ success: false, message: "Teacher not found." });
     }
 
     const teacherId = teacherRows[0].id;
 
-    // Step 2: Fetch subjects assigned to this teacher
+    // Get subjects taught by teacher
     const [subjects] = await studentDB.query(
       `
       SELECT s.id, s.code, s.name, s.units, s.year_level, s.semester
@@ -32,33 +35,41 @@ export const getTeacherSubjects = async (req, res) => {
       [teacherId]
     );
 
-    // Step 3: Fetch enrolled students per subject
-    if (subjects.length === 0) {
+    if (!subjects.length) {
       return res.json({ success: true, data: [] });
     }
 
     const subjectIds = subjects.map(s => s.id);
     const placeholders = subjectIds.map(() => "?").join(",");
 
+    // Get enrolled students by school_id FROM userDB
     const [students] = await studentDB.query(
       `
-      SELECT e.subject_id, st.id, st.full_name, st.school_id,
-             COALESCE(g.grade, '') AS grade, COALESCE(g.remarks, '') AS remarks
+      SELECT 
+        e.subject_id,
+        st.school_id,
+        st.full_name,
+        COALESCE(g.grade, '') AS grade,
+        COALESCE(g.remarks, '') AS remarks
       FROM enrollments e
-      JOIN students st ON e.student_id = st.id
-      LEFT JOIN grades g ON g.student_id = st.id AND g.subject_id = e.subject_id
-      WHERE e.subject_id IN (${placeholders}) AND e.teacher_id = ?
+      JOIN ${process.env.DB_USERS_NAME}.students st
+        ON st.school_id = e.school_id
+      LEFT JOIN grades g 
+        ON g.student_id = st.school_id 
+       AND g.subject_id = e.subject_id
+      WHERE e.subject_id IN (${placeholders})
+        AND e.teacher_id = ?
+        AND e.status = 'enrolled'
       `,
       [...subjectIds, teacherId]
     );
 
-    // Group students by subject
-    const subjectsWithStudents = subjects.map(subject => ({
-      ...subject,
-      students: students.filter(st => st.subject_id === subject.id)
+    const result = subjects.map(sub => ({
+      ...sub,
+      students: students.filter(s => s.subject_id === sub.id)
     }));
 
-    res.json({ success: true, data: subjectsWithStudents });
+    res.json({ success: true, data: result });
 
   } catch (error) {
     console.error("Error fetching teacher subjects:", error);
@@ -67,34 +78,46 @@ export const getTeacherSubjects = async (req, res) => {
 };
 
 
-// Get all subjects assigned to a teacher with their students
+/* =====================================================
+   GET TEACHER SUBJECTS + STUDENTS (by teacherId)
+===================================================== */
 export const getTeacherSubjectsWithStudents = async (req, res) => {
   const teacherId = req.params.id;
 
   try {
-    const [rows] = await studentDB.query(`
+    const [rows] = await studentDB.query(
+      `
       SELECT 
         s.id AS subject_id,
         s.code AS subject_code,
         s.name AS subject_name,
         s.units,
         s.year_level,
-        st.id AS student_id,
+        st.school_id AS student_school_id,
         st.full_name,
         g.grade,
         g.remarks
       FROM teacher_subjects ts
       JOIN subjects s ON ts.subject_id = s.id
-      LEFT JOIN enrollments e ON e.subject_id = s.id AND e.teacher_id = ts.teacher_id
-      LEFT JOIN students st ON st.id = e.student_id
-      LEFT JOIN grades g ON g.student_id = st.id AND g.subject_id = s.id AND g.teacher_id = ts.teacher_id
+      LEFT JOIN enrollments e 
+        ON e.subject_id = s.id 
+       AND e.teacher_id = ts.teacher_id
+       AND e.status = 'enrolled'
+      LEFT JOIN ${process.env.DB_USERS_NAME}.students st 
+        ON st.school_id = e.school_id
+      LEFT JOIN grades g 
+        ON g.student_id = st.school_id 
+       AND g.subject_id = s.id
       WHERE ts.teacher_id = ?
-    `, [teacherId]);
+      ORDER BY s.year_level, s.semester, st.full_name
+      `,
+      [teacherId]
+    );
 
     const subjects = rows.reduce((acc, row) => {
-      let subject = acc.find(sub => sub.id === row.subject_id);
-      if (!subject) {
-        subject = {
+      let sub = acc.find(x => x.id === row.subject_id);
+      if (!sub) {
+        sub = {
           id: row.subject_id,
           code: row.subject_code,
           name: row.subject_name,
@@ -102,41 +125,54 @@ export const getTeacherSubjectsWithStudents = async (req, res) => {
           year_level: row.year_level,
           students: []
         };
-        acc.push(subject);
+        acc.push(sub);
       }
-      if (row.student_id) {
-        subject.students.push({
-          id: row.student_id,
+
+      if (row.student_school_id) {
+        sub.students.push({
+          school_id: row.student_school_id,
           full_name: row.full_name,
-          grade: row.grade ?? '',  // Include grade
-          remarks: row.remarks ?? ''  // Include remarks
+          grade: row.grade ?? '',
+          remarks: row.remarks ?? ''
         });
       }
+
       return acc;
     }, []);
 
     res.json({ success: true, data: subjects });
+
   } catch (err) {
     console.error("Error fetching teacher subjects:", err);
-    res.status(500).json({ success: false, error: 'Failed to fetch teacher subjects' });
+    res.status(500).json({ success: false, error: "Failed to fetch teacher subjects" });
   }
 };
 
-// ENROLLMENT_SYSTEM
+
+/* =====================================================
+   GET APPROVED TEACHERS (FROM userDB)
+===================================================== */
 export const getApprovedTeachers = async (req, res) => {
   try {
-    const [teachers] = await studentDB.query(
-      `SELECT id, full_name, email, specialization
+    const [teachers] = await userDB.query(
+      `
+      SELECT id, full_name, email, specialization
       FROM teachers
-      WHERE status = 'approved'`
-    )
-    res.json({ success:true, data: teachers })
-  } catch (err) {
-    console.error(err) 
-    res.status(500).json({ success: false, message: 'Database error' })
-  }
-}
+      WHERE status = 'approved'
+      `
+    );
 
+    res.json({ success: true, data: teachers });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: "Database error" });
+  }
+};
+
+/* =====================================================
+   GET TEACHER BY USER_ID + SUBJECTS + STUDENTS
+===================================================== */
 export const getTeacherByUserId = async (req, res) => {
   const userId = req.query.user_id;
 
@@ -145,13 +181,15 @@ export const getTeacherByUserId = async (req, res) => {
   }
 
   try {
-    // Step 1: Get teacher info
-    const [teacherRows] = await studentDB.query(
-      `SELECT 
+    // 1️⃣ Get teacher (FROM userDB)
+    const [teacherRows] = await userDB.query(
+      `
+      SELECT 
         id, user_id, full_name, profile_picture, email, contact, address, bio,
         occupation, education, skills, specialization, status
       FROM teachers
-      WHERE user_id = ?`,
+      WHERE user_id = ?
+      `,
       [userId]
     );
 
@@ -161,7 +199,7 @@ export const getTeacherByUserId = async (req, res) => {
 
     const teacher = teacherRows[0];
 
-    // Step 2: Get subjects assigned to this teacher
+    // 2️⃣ Get subjects assigned to teacher
     const [subjects] = await studentDB.query(
       `
       SELECT 
@@ -178,7 +216,7 @@ export const getTeacherByUserId = async (req, res) => {
       [teacher.id]
     );
 
-    // Step 3: Fetch students per subject
+    // 3️⃣ Get enrolled students for these subjects (USING school_id)
     if (subjects.length) {
       const subjectIds = subjects.map(s => s.id);
       const placeholders = subjectIds.map(() => "?").join(",");
@@ -187,45 +225,51 @@ export const getTeacherByUserId = async (req, res) => {
         `
         SELECT 
           e.subject_id,
-          st.id,
-          st.full_name,
           st.school_id,
+          st.full_name,
           COALESCE(g.grade, '') AS grade,
           COALESCE(g.remarks, '') AS remarks
         FROM enrollments e
-        JOIN students st ON e.student_id = st.id
-        LEFT JOIN grades g ON g.student_id = st.id AND g.subject_id = e.subject_id
-        WHERE e.subject_id IN (${placeholders})
-        AND e.teacher_id = ?
+        JOIN ${process.env.DB_USERS_NAME}.students st 
+            ON st.school_id = e.school_id
+        LEFT JOIN grades g 
+            ON g.student_id = st.school_id
+           AND g.subject_id = e.subject_id
+        WHERE e.subject_id IN (${placeholders}) 
+          AND e.teacher_id = ?
+          AND e.status = 'enrolled'
         `,
         [...subjectIds, teacher.id]
       );
 
-      // Attach students to their subjects
-      subjects.forEach(subject => {
-        subject.students = students.filter(st => st.subject_id === subject.id);
+      // Attach students to subjects
+      subjects.forEach(sub => {
+        sub.students = students.filter(st => st.subject_id === sub.id);
       });
     }
 
-    res.json({
+    return res.json({
       success: true,
-      data: {
-        teacher,
-        subjects
-      }
+      data: { teacher, subjects }
     });
 
   } catch (err) {
     console.error("Error fetching teacher and subjects:", err);
-    res.status(500).json({ success: false, message: "Database error", error: err.message });
+    return res.status(500).json({
+      success: false,
+      message: "Database error",
+      error: err.message,
+    });
   }
 };
 
 
+/* =====================================================
+   UPDATE TEACHER PROFILE (userDB only)
+===================================================== */
 export const updateTeacherProfile = async (req, res) => {
   const userId = req.params.userId;
 
-  // Safely destructure req.body to avoid crashing if it's undefined
   const {
     full_name,
     profile_picture,
@@ -238,49 +282,44 @@ export const updateTeacherProfile = async (req, res) => {
     skills,
     specialization,
     status
-  } = req.body || {}; // <-- fallback to empty object
+  } = req.body || {};
 
-  // Optional: check if body actually has required fields
   if (!full_name || !email) {
     return res.status(400).json({ success: false, message: "Full name and email are required" });
   }
 
   try {
-    const teacherQuery = `
+    await userDB.query(
+      `
       UPDATE teachers SET 
         full_name=?, profile_picture=?, email=?, contact=?, address=?, bio=?,
         occupation=?, education=?, skills=?, specialization=?, status=?
-      WHERE user_id=?`;
-
-    const teacherParams = [
-      full_name, profile_picture, email, contact, address, bio,
-      occupation, education, skills, specialization, status,
-      userId
-    ];
-
-    await studentDB.query(teacherQuery, teacherParams);
-    await userDB.query(teacherQuery, teacherParams);
-
-    // Update users table if teacher exists
-    const [teacherRows] = await userDB.query(
-      `SELECT user_id FROM teachers WHERE user_id = ?`,
-      [userId]
+      WHERE user_id=?
+      `,
+      [
+        full_name, profile_picture, email, contact, address, bio,
+        occupation, education, skills, specialization, status,
+        userId
+      ]
     );
 
-    if (teacherRows.length) {
-      await userDB.query(
-        `UPDATE users SET full_name=?, email=? WHERE id=?`,
-        [full_name, email, teacherRows[0].user_id]
-      );
-    }
+    // Update users table
+    await userDB.query(
+      `UPDATE users SET full_name=?, email=? WHERE id=?`,
+      [full_name, email, userId]
+    );
 
-    res.json({ success: true, message: "Profile updated successfully in both databases" });
+    res.json({ success: true, message: "Profile updated successfully" });
+
   } catch (err) {
     console.error("Error updating teacher profile:", err);
     res.status(500).json({ success: false, message: "Database error" });
   }
 };
 
+/* =====================================================
+   SUBMIT GRADES
+===================================================== */
 export const submitGrades = async (req, res) => {
   const { updates } = req.body;
 
@@ -309,7 +348,3 @@ export const submitGrades = async (req, res) => {
     return res.status(500).json({ message: "Failed to update grades." });
   }
 };
-
-
-
-

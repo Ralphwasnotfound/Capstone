@@ -70,62 +70,53 @@ import { registerStudent } from '@/composables/registration';
 
 export default {
     name: 'StudentRegister',
+
     data() {
         return {
-            form :{
+            form: {
                 fullName: '',
                 email: '',
                 password: '',
                 confirmPassword: '',
                 contact: ''
-            },
-        }
+            }
+        };
     },
+
     methods: {
         async handleSubmit() {
             if (this.form.password !== this.form.confirmPassword) {
-                alert("Password do not match!")
-                return
+                alert("Passwords do not match!");
+                return;
             }
 
-    const payload = {
-        full_name: this.form.fullName,
-        email: this.form.email,
-        password: this.form.password,
-        role: 'student',
-        contact: this.form.contact,
+            const payload = {
+                full_name: this.form.fullName,
+                email: this.form.email,
+                password: this.form.password,
+                contact: this.form.contact,
+                role: "student"
+            };
 
-        // Default values for required student fields
-        street: null,
-        barangay: null,
-        city: null,
-        province: null,
-        zipcode: null,
-        guardian_name: null,
-        guardian_contact: null
+            const res = await registerStudent(payload);
+
+            if (res.success) {
+                alert("Registration Successful!");
+
+                // Clear fields
+                this.form.fullName = '';
+                this.form.email = '';
+                this.form.password = '';
+                this.form.confirmPassword = '';
+                this.form.contact = '';
+            } else {
+                alert(`Registration Failed: ${res.error}`);
+            }
+        }
     }
-
-    const res = await registerStudent(payload)
-    const userStore = useUserStore()
-
-    if(res.success) {
-        userStore.setUser(res.user)
-        localStorage.setItem('token', res.token)
-        alert('Registration Successful!')
-
-        this.form.fullName = ''
-        this.form.email = ''
-        this.form.password = ''
-        this.form.confirmPassword = ''
-        this.form.contact = ''
-    } else {
-        alert(`registration Failed: ${res.error}`)
-    }
-}
-
-    }
-}
+};
 </script>
+
 
 <style lang="scss" scoped>
 

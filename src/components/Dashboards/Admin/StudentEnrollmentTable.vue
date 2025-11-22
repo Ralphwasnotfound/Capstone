@@ -30,10 +30,10 @@
             <td class="p-2">{{ student.email || 'N/A' }}</td>
             <td class="p-2">{{ student.status?.toLowerCase() === 'pending' ? 'Pending' : 'N/A' }}</td>
             <td class="p-2">{{ student.enrollment_type || 'N/A' }}</td>
-            <td class="p-2">{{ student.course || 'N/A' }}</td>
+            <td class="p-2">{{ student.course_id || 'N/A' }}</td>
             <td class="p-2">{{ formatYearLevel(student.year_level) }}</td>
             <td class="p-2">{{ student.semester || 'N/A' }}</td>
-            <td class="p-2">{{ student.academic_year || 'N/A' }}</td>
+            <td class="p-2">{{ student.academic_year_id || 'N/A' }}</td>
             <td class="p-2">{{ formatDate(student.created_at) }}</td>
             <td class="p-2">
               <button
