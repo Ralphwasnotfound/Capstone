@@ -1,6 +1,9 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { userDB, studentDB } from '../db.js';
+import nodemailer from 'nodemailer';
+import crypto from "crypto";
+
 
 // ======================================================
 // GET STUDENTS  (from userDB)
@@ -177,17 +180,22 @@ export const createTeacherByAdmin = async (req, res) => {
 // CHANGE PASSWORD
 // ======================================================
 export const changePassword = async (req, res) => {
-    const { userId, currentPassword, newPassword } = req.body;
-
     try {
+        // userId now comes from token
+        const userId = req.user.id;  
+
+        const { currentPassword, newPassword } = req.body;
+
         const [rows] = await userDB.query('SELECT * FROM users WHERE id = ?', [userId]);
-        if (!rows.length) return res.status(404).json({ error:'User not found' });
+        if (!rows.length) return res.status(404).json({ error: 'User not found' });
 
         const user = rows[0];
+
         const isMatch = await bcrypt.compare(currentPassword, user.password);
-        if (!isMatch) return res.status(400).json({ error:'Current password is incorrect' });
+        if (!isMatch) return res.status(400).json({ error: 'Current password is incorrect' });
 
         const hashedNew = await bcrypt.hash(newPassword, 10);
+
         await userDB.query('UPDATE users SET password = ? WHERE id = ?', [hashedNew, userId]);
 
         res.json({ success: true, message: 'Password changed successfully' });
@@ -196,6 +204,7 @@ export const changePassword = async (req, res) => {
         res.status(500).json({ error: 'Server error changing password' });
     }
 };
+
 
 // ======================================================
 // LOGIN USER
@@ -214,46 +223,107 @@ export const loginUser = async (req, res) => {
         const match = await bcrypt.compare(password, user.password);
         if (!match) return res.status(401).json({ error: 'Invalid Email or Password' });
 
-        // attach student info
-        if (user.role === 'student') {
-            const [stuRows] = await userDB.query(
-                'SELECT id, status, contact FROM students WHERE user_id = ?',
-                [user.id]
-            );
-            const stu = stuRows[0];
-            if (!stu || !['approved', 'registration_approved'].includes(stu.status))
-                return res.status(403).json({ error: 'Your Account is not approved yet' });
-            user.student_id = stu.id;
-            user.contact = stu.contact;
+        // Skip approval checks until OTP is verified
+        const otp = crypto.randomInt(100000, 999999);
+
+        await userDB.query(`
+            INSERT INTO password_reset_tokens (user_id, otp, expires_at)
+            VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 10 MINUTE))
+            ON DUPLICATE KEY UPDATE otp = VALUES(otp), expires_at = VALUES(expires_at)
+        `, [user.id, otp]);
+
+        // Simulated OTP email
+        const transporter = nodemailer.createTransport({ jsonTransport: true });
+        await transporter.sendMail({
+            from: "System <no-reply@school.com>",
+            to: user.email,
+            subject: "Your Login OTP",
+            text: `Your OTP code is: ${otp}. Valid for 10 minutes.`
+        });
+
+        console.log("🔐 LOGIN OTP SENT:", { email: user.email, otp });
+
+        return res.json({
+            success: true,
+            requiresOTP: true,
+            userId: user.id,
+            message: "OTP sent. Please verify."
+        });
+
+    } catch (err) {
+        console.error("Login error:", err);
+        return res.status(500).json({ error: 'Server error' });
+    }
+};
+
+export const verifyLoginOtp = async (req, res) => {
+    const { userId, otp } = req.body;
+
+    if (!userId || !otp)
+        return res.status(400).json({ error: "Missing OTP or userId" });
+
+    try {
+        const [tokenRows] = await userDB.query(`
+            SELECT otp, expires_at FROM password_reset_tokens WHERE user_id = ?
+        `, [userId]);
+
+        if (!tokenRows.length)
+            return res.status(400).json({ error: "No OTP found. Login again." });
+
+        const token = tokenRows[0];
+
+        if (String(token.otp) !== String(otp))
+            return res.status(400).json({ error: "Invalid OTP." });
+
+        if (new Date(token.expires_at) < new Date())
+            return res.status(400).json({ error: "OTP expired." });
+
+        // Fetch user
+        const [userRows] = await userDB.query("SELECT * FROM users WHERE id = ?", [userId]);
+        const user = userRows[0];
+
+        if (!user) return res.status(404).json({ error: "User not found" });
+
+        // Apply the same approval checks here
+        if (user.role === "student") {
+            const [stu] = await userDB.query("SELECT status FROM students WHERE user_id = ?", [userId]);
+            if (!["approved", "registration_approved"].includes(stu[0].status)) {
+                return res.status(403).json({ error: "Your account is not approved yet." });
+            }
         }
 
-        // attach teacher info
-        if (user.role === 'teacher') {
-            const [teaRows] = await userDB.query(
-                'SELECT id, status, contact FROM teachers WHERE user_id = ?',
-                [user.id]
-            );
-            const tea = teaRows[0];
-            if (!tea || tea.status !== 'approved')
-                return res.status(403).json({ error: 'Your account is not yet Approved.' });
-            user.teacher_id = tea.id;
-            user.contact = tea.contact;
+        if (user.role === "teacher") {
+            const [tea] = await userDB.query("SELECT status FROM teachers WHERE user_id = ?", [userId]);
+            if (tea[0].status !== "approved") {
+                return res.status(403).json({ error: "Teacher account not approved." });
+            }
         }
 
-        const token = jwt.sign(
+        // OTP is correct — LOG IN USER NOW
+        const tokenJwt = jwt.sign(
             { id: user.id, role: user.role },
             process.env.JWT_SECRET,
-            { expiresIn: '30d' }
+            { expiresIn: "30d" }
         );
+
+        // Cleanup
+        await userDB.query("DELETE FROM password_reset_tokens WHERE user_id = ?", [userId]);
 
         delete user.password;
 
-        res.json({ message: 'Login Successful', token, user });
+        res.json({
+            success: true,
+            message: "Login successful",
+            token: tokenJwt,
+            user
+        });
+
     } catch (err) {
-        console.error('Login Error:', err);
-        res.status(500).json({ error: 'Server error' });
+        console.error("Verify OTP error:", err);
+        res.status(500).json({ error: "Server error verifying OTP." });
     }
 };
+
 
 // ======================================================
 // GET USERS (admin)
@@ -369,4 +439,135 @@ export const createDefaultAdmin = async () => {
     } else {
         console.log('Default admin already exists');
     }
+};
+
+// ======================================================
+// FORGOT PASSWORD (SEND OTP)
+// ======================================================
+export const forgotPassword = async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({ error: "Email is required" });
+  }
+
+  try {
+    // Check if user exists
+    const [rows] = await userDB.query(
+      "SELECT id, email FROM users WHERE email = ?",
+      [email]
+    );
+
+    if (!rows.length) {
+      return res.status(404).json({ error: "Email not found." });
+    }
+
+    const user = rows[0];
+
+    // Generate OTP (6 digits)
+    const otp = crypto.randomInt(100000, 999999);
+
+    // Save OTP to DB (create a new table reset_tokens if not existing)
+    await userDB.query(
+      `INSERT INTO password_reset_tokens (user_id, otp, expires_at)
+       VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 10 MINUTE))
+       ON DUPLICATE KEY UPDATE 
+         otp = VALUES(otp),
+         expires_at = VALUES(expires_at)`,
+      [user.id, otp]
+    );
+
+    // Use simulated transporter (prints only — no email sent)
+    const transporter = nodemailer.createTransport({
+      jsonTransport: true,
+    });
+
+    // Send OTP (simulated)
+    await transporter.sendMail({
+      from: "Capstone System <no-reply@school.com>",
+      to: email,
+      subject: "Your OTP Code",
+      text: `Your OTP is: ${otp}. It is valid for 10 minutes.`,
+    });
+
+    console.log("📩 SIMULATED EMAIL SENT:");
+    console.log({
+      to: email,
+      otp,
+    });
+
+    res.json({ success: true, message: "OTP sent (simulated)." });
+
+  } catch (err) {
+    console.error("Forgot password error:", err);
+    res.status(500).json({ error: "Server error sending OTP." });
+  }
+};
+
+
+// ======================================================
+// RESET PASSWORD (VERIFY OTP + SET NEW PASSWORD)
+// ======================================================
+export const resetPassword = async (req, res) => {
+  const { email, otp, newPassword } = req.body;
+
+  if (!email || !otp || !newPassword) {
+    return res.status(400).json({ error: "Missing required fields." });
+  }
+
+  try {
+    // 1. Get user
+    const [userRows] = await userDB.query(
+      "SELECT id FROM users WHERE email = ?",
+      [email]
+    );
+
+    if (!userRows.length) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const userId = userRows[0].id;
+
+    // 2. Verify OTP
+    const [tokenRows] = await userDB.query(
+      `SELECT otp, expires_at
+       FROM password_reset_tokens
+       WHERE user_id = ?`,
+      [userId]
+    );
+
+    if (!tokenRows.length) {
+      return res.status(400).json({ error: "No OTP found. Request again." });
+    }
+
+    const token = tokenRows[0];
+
+    if (String(token.otp) !== String(otp)) {
+      return res.status(400).json({ error: "Invalid OTP." });
+    }
+
+    if (new Date(token.expires_at) < new Date()) {
+      return res.status(400).json({ error: "OTP has expired." });
+    }
+
+    // 3. Update password
+    const hashed = await bcrypt.hash(newPassword, 10);
+
+    await userDB.query(
+      "UPDATE users SET password = ? WHERE id = ?",
+      [hashed, userId]
+    );
+
+    // 4. Delete token after use
+    await userDB.query(
+      "DELETE FROM password_reset_tokens WHERE user_id = ?",
+      [userId]
+    );
+
+    res.json({ success: true, message: "Password reset successful!" });
+
+  } catch (err) {
+    console.error("Reset password error:", err);
+    res.status(500).json({ error: "Server error resetting password." });
+  }
 };

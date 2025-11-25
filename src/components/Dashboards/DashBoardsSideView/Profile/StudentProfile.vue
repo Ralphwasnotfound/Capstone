@@ -43,6 +43,10 @@
       </div>
     </div>
 
+    <div>
+      <ChangePassword/>
+    </div>
+
     <!-- Profile Details -->
     <div v-if="showDetails" class="space-y-8">
       <button @click="toggleEdit" class="mb-4 px-4 py-2 bg-blue-600 text-white rounded">
@@ -93,8 +97,12 @@
 import axios from 'axios'
 import { handleImageupload } from '@/composables/useProfile'
 import { useUserStore } from '@/stores/users.js'
+import ChangePassword from '@/components/Dashboards/Admin/Passwords/ChangePassword.vue';
 
 export default {
+  components: {
+    ChangePassword
+  },
   props: {
     role: { type: String, required: true },
     showDetails: { type: Boolean, default: true }

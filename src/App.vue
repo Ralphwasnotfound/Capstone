@@ -64,7 +64,11 @@ export default{
         // GRADES
         '/grades/:subjectId',
         //Creating accounts
-        '/dashboard/admin/create-teacher'
+        '/dashboard/admin/create-teacher',
+        //
+        '/forgot-password',
+        '/verify-login-otp'
+        
       ]
       return hiddenRoutes.includes(this.$route.path) || 
       /^\/grades\/\d+$/.test(this.$route.path) ||         // /grades/:subjectId

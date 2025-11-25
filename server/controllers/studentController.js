@@ -222,6 +222,10 @@ export const approveStudent = async (req, res) => {
   const schoolId = req.params.schoolId;
   const { subjects } = req.body;
 
+    console.log("🔥 BACKEND — APPROVE API HIT ===================");
+  console.log("URL schoolId:", schoolId);
+  console.log("📦 Received body:", req.body);
+
   if (!subjects || !subjects.length) {
     return res.status(400).json({
       success: false,

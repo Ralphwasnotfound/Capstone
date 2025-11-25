@@ -23,7 +23,6 @@
       required
     />
 
-    <!-- Buttons -->
     <div class="flex flex-col gap-3 mt-4">
       <button
         type="submit"
@@ -32,84 +31,71 @@
         Login
       </button>
 
-      <RouterLink
-        to="/register"
-        class="text-center text-[#37555e] font-semibold hover:underline"
-      >
+      <RouterLink to="/register" class="text-center text-[#37555e] font-semibold hover:underline">
         Don’t have an account? Create one
       </RouterLink>
+
+      <router-link to="/forgot-password">
+        Forgot Password
+      </router-link>
     </div>
   </form>
 </template>
 
 <script>
-import { loginUser } from '@/composables/registration'
-import { useUserStore } from '@/stores/users.js'
+import axios from "axios";
+import { useUserStore } from "@/stores/users";
 
 export default {
   data() {
     return {
-      form: { email: '', password: '' }
-    }
+      form: { email: "", password: "" }
+    };
   },
 
   mounted() {
-    const user = sessionStorage.getItem('user')
-    if (user) this.$router.push('/dashboard')
+    const user = sessionStorage.getItem("user");
+    if (user) this.$router.push("/dashboard");
   },
 
   methods: {
     async handleLogin() {
-      try {
-        const { success, data, error } = await loginUser(this.form)
+  try {
+    const res = await axios.post("http://localhost:3000/users/login", {
+      email: this.form.email,
+      password: this.form.password
+    });
 
-        if (!success) {
-          alert(`Login failed: ${error}`)
-          return
-        }
-
-        const userStore = useUserStore()
-        const user = data.user
-        const token = data.token
-
-        sessionStorage.clear()
-
-        sessionStorage.setItem('user', JSON.stringify(user))
-        sessionStorage.setItem('token', token)
-        sessionStorage.setItem('role', user.role)
-        sessionStorage.setItem('user_id', user.id)
-
-        if (user.role === 'teacher' && user.teacher_id) {
-          sessionStorage.setItem('teacher_id', user.teacher_id)
-        }
-
-        if (user.role === 'student') {
-          sessionStorage.setItem('student_id', user.student_id)
-
-          // 🔥 PROPER WAY TO FETCH school_id
-          const res = await fetch(
-            `http://localhost:3000/students?user_id=${user.id}`,
-            { headers: { Authorization: `Bearer ${token}` } }
-          )
-
-          const result = await res.json()
-
-          if (result?.data?.length) {
-            sessionStorage.setItem("school_id", result.data[0].school_id)
-          }
-        }
-
-        userStore.setUser(user, token)
-
-        alert('Login successful!')
-        this.$router.push('/dashboard')
-
-      } catch (err) {
-        console.error('Login Error:', err)
-        alert('Something went wrong during login.')
-      }
+    // 🔥 If OTP is required
+    if (res.data.requiresOTP) {
+      alert("OTP sent! Check your email (simulated in backend console).");
+      this.$router.push({
+        path: "/verify-login-otp",
+        query: { userId: res.data.userId }
+      });
+      return;
     }
+
+    // 🔥 If login doesn’t need OTP (fallback)
+    const userStore = useUserStore();
+    const user = res.data.user;
+    const token = res.data.token;
+
+    sessionStorage.setItem("user", JSON.stringify(user));
+    sessionStorage.setItem("token", token);
+    sessionStorage.setItem("role", user.role);
+
+    userStore.setUser(user, token);
+
+    alert("Login successful!");
+    this.$router.push("/dashboard");
+
+  } catch (err) {
+    console.error("Login Error:", err);
+    alert(err.response?.data?.error || "Login failed.");
   }
 }
-</script>
 
+  }
+};
+</script>

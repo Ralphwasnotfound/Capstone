@@ -26,6 +26,10 @@
       </div>
     </div>
 
+    <div>
+      <ChangePassword/>
+    </div>
+
     <!-- Profile Details Two-Column Layout -->
     <div v-if="showDetails" class="space-y-8">
       <div class="flex gap-4 mb-4">
@@ -118,8 +122,12 @@
 
 <script>
 import axios from "axios";
+import ChangePassword from "@/components/Dashboards/Admin/Passwords/ChangePassword.vue";
 
 export default {
+  components: {
+    ChangePassword
+  },
   props: { showDetails: { type: Boolean, default: true } },
   data() {
     return {

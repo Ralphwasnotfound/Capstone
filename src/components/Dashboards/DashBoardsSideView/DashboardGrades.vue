@@ -322,17 +322,20 @@ async mounted() {
 
         const payload = [];
 
-        for (const subjectId in this.localEdits) {
-          for (const studentId in this.localEdits[subjectId]) {
-            const edit = this.localEdits[subjectId][studentId];
+        for (const subject of this.subjects) {
+          for (const student of subject.students) {
+            if (this.localEdits[subject.id]?.[student.id]) {
+              
+              const edit = this.localEdits[subject.id][student.id]
 
-            payload.push({
-              subject_id: Number(subjectId),
-              student_id: Number(studentId),
-              teacher_id: teacherId,
-              grade: edit.grade,
-              remarks: edit.remarks
-            });
+              payload.push({
+                subject_id: subject.id,
+                teacher_id: teacherId,
+                student_id: student.id,
+                grade: edit.grade,
+                remarks: edit.remarks
+              })
+            }
           }
         }
 

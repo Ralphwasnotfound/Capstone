@@ -12,7 +12,7 @@ export const getTeacherSubjects = async (req, res) => {
   }
 
   try {
-    // Get teacher from userDB
+    // Get teacher internal ID
     const [teacherRows] = await userDB.query(
       "SELECT id FROM teachers WHERE user_id = ?",
       [userId]
@@ -24,7 +24,7 @@ export const getTeacherSubjects = async (req, res) => {
 
     const teacherId = teacherRows[0].id;
 
-    // Get subjects taught by teacher
+    // Fetch assigned subjects
     const [subjects] = await studentDB.query(
       `
       SELECT s.id, s.code, s.name, s.units, s.year_level, s.semester
@@ -42,11 +42,12 @@ export const getTeacherSubjects = async (req, res) => {
     const subjectIds = subjects.map(s => s.id);
     const placeholders = subjectIds.map(() => "?").join(",");
 
-    // Get enrolled students by school_id FROM userDB
+    // Fetch enrolled students WITH real internal ID
     const [students] = await studentDB.query(
       `
       SELECT 
         e.subject_id,
+        st.id AS real_student_id,     -- REAL ID (FK to grades)
         st.school_id,
         st.full_name,
         COALESCE(g.grade, '') AS grade,
@@ -55,7 +56,7 @@ export const getTeacherSubjects = async (req, res) => {
       JOIN ${process.env.DB_USERS_NAME}.students st
         ON st.school_id = e.school_id
       LEFT JOIN grades g 
-        ON g.student_id = st.school_id 
+        ON g.student_id = st.id          -- FIXED FK match
        AND g.subject_id = e.subject_id
       WHERE e.subject_id IN (${placeholders})
         AND e.teacher_id = ?
@@ -64,18 +65,32 @@ export const getTeacherSubjects = async (req, res) => {
       [...subjectIds, teacherId]
     );
 
+    // Attach students → with real ID included
     const result = subjects.map(sub => ({
       ...sub,
-      students: students.filter(s => s.subject_id === sub.id)
+      students: students
+        .filter(s => s.subject_id === sub.id)
+        .map(s => ({
+          id: s.real_student_id,      // IMPORTANT
+          school_id: s.school_id,     // display only
+          full_name: s.full_name,
+          grade: s.grade,
+          remarks: s.remarks
+        }))
     }));
 
     res.json({ success: true, data: result });
 
   } catch (error) {
     console.error("Error fetching teacher subjects:", error);
-    res.status(500).json({ success: false, message: "Database error", error: error.message });
+    res.status(500).json({
+      success: false,
+      message: "Database error",
+      error: error.message
+    });
   }
 };
+
 
 
 /* =====================================================
@@ -185,8 +200,18 @@ export const getTeacherByUserId = async (req, res) => {
     const [teacherRows] = await userDB.query(
       `
       SELECT 
-        id, user_id, full_name, profile_picture, email, contact, address, bio,
-        occupation, education, skills, specialization, status
+        id, 
+        user_id, 
+        full_name, 
+        profile_picture, 
+        email, contact, 
+        address, 
+        bio,
+        occupation, 
+        education, 
+        skills, 
+        specialization, 
+        status
       FROM teachers
       WHERE user_id = ?
       `,
@@ -225,6 +250,7 @@ export const getTeacherByUserId = async (req, res) => {
         `
         SELECT 
           e.subject_id,
+          st.id AS real_student_id,
           st.school_id,
           st.full_name,
           COALESCE(g.grade, '') AS grade,
@@ -333,7 +359,13 @@ export const submitGrades = async (req, res) => {
 
       await studentDB.query(
         `
-        INSERT INTO grades (subject_id, teacher_id, student_id, grade, remarks)
+        INSERT INTO grades (
+          subject_id, 
+          teacher_id, 
+          student_id, 
+          grade, 
+          remarks
+        )
         VALUES (?, ?, ?, ?, ?)
         ON DUPLICATE KEY UPDATE grade = VALUES(grade), remarks = VALUES(remarks)
         `,
@@ -348,3 +380,4 @@ export const submitGrades = async (req, res) => {
     return res.status(500).json({ message: "Failed to update grades." });
   }
 };
+

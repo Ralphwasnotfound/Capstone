@@ -90,7 +90,23 @@ const router = createRouter({
     name: 'StudentSubject',
     component: DashboardGrades
     },
+    // PASSWORD
 
+    {
+      path: "/forgot-password",
+      name: "ForgotPassword",
+      component: () => import("@/views/Auth/Passwords/ForgotPassword.vue"),
+    },
+    {
+      path: "/reset-password",
+      name: "ResetPassword",
+      component: () => import("@/views/Auth/Passwords/ResetPassword.vue"),
+    },
+    {
+      path: "/verify-login-otp",
+      name: "VerifyLoginOTP",
+      component: () => import("@/views/Auth/OTP/VerifyLoginOTP.vue")
+    },
     // STUDENT ENROLLMENT PAGE
     {
       path: '/student-enrollment',

@@ -107,7 +107,7 @@ export default {
     },
     async fetchStudentAndSubjects() {
   try {
-    const schoolIdParam = this.$route.params.schoolId;
+    const schoolIdParam = this.$route.params.schoolId || this.$route.params.id;
     const token = localStorage.getItem("token");
 
     // 1️⃣ Fetch student (by school_id)
@@ -120,14 +120,16 @@ export default {
       return alert("Student not found.");
     }
 
-    this.student = studentRes.data.data[0];
+    this.student = 
+      studentRes.data.data.find(s => s.school_id === schoolIdParam) ||
+      studentRes.data.data[0];
 
     // Map course name
     const courseMap = { 1: "BSIT", 2: "BSBA", 3: "BSCRIM" };
     this.student.course_name = courseMap[this.student.course_id] || "Unknown";
 
     // Save school_id to session (student viewing dashboard will need this)
-    sessionStorage.setItem("school_id", this.student.school_id);
+    // sessionStorage.setItem("school_id", this.student.school_id);
 
     // 2️⃣ Fetch ACTIVE academic year to get correct SEMESTER
     let activeSemester = "1st";
@@ -221,6 +223,11 @@ export default {
       yearLevel
     }))
   };
+
+  
+console.log("🔥 FRONTEND — Enrolling student:", this.student.school_id);
+console.log("🔥 FRONTEND — Payload:", payload);
+console.log("🔥 FINAL USED SCHOOL ID:", this.student.school_id);
 
   try {
     // ✅ Updated URL to match your backend
